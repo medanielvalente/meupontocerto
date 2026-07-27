@@ -693,13 +693,11 @@
       ? `registros ${minutesToHHMM(bancoRegistros,true)} · saldo inicial ${minutesToHHMM(saldoInicial,true)}`
       : 'acumulado dos dias registrados';
 
-    // previsão de saída = entrada + meta + almoço
+    // previsão de saída com almoço real
     const saidaPrevistaEl = $('cp-saida-prevista');
     const saidaNoteEl = $('cp-saida-prevista-note');
     if (day && day.entrada) {
-      const entradaMin = toMinutes(day.entrada);
-      const almoco = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
-      const saidaMin = entradaMin + expectedWorkedMinutes() + almoco;
+      const saidaMin = calcSaidaPrevista(day);
       const saidaH = Math.floor(saidaMin / 60) % 24;
       const saidaM = saidaMin % 60;
       const saidaStr = String(saidaH).padStart(2,'0') + ':' + String(saidaM).padStart(2,'0');
@@ -707,9 +705,19 @@
       saidaPrevistaEl.style.color = day.saidaFinal
         ? 'var(--ink-soft)'
         : 'var(--brand-deep)';
+      // mostra aviso se almoço real foi diferente do padrão
+      const almocoReal = (day.saidaAlmoco && day.retornoAlmoco)
+        ? toMinutes(day.retornoAlmoco) - toMinutes(day.saidaAlmoco)
+        : null;
+      const almocoPadrao = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
+      const diff = almocoReal !== null ? almocoReal - almocoPadrao : 0;
       saidaNoteEl.textContent = day.saidaFinal
         ? `saída às ${day.saidaFinal}`
-        : `entrada às ${day.entrada}`;
+        : diff > 0
+          ? `+${diff} min de almoço`
+          : diff < 0
+            ? `${diff} min de almoço`
+            : `entrada às ${day.entrada}`;
     } else {
       saidaPrevistaEl.textContent = '--:--';
       saidaPrevistaEl.style.color = '';
@@ -931,11 +939,23 @@
     if (Notification.permission==='granted') new Notification(title, { body });
   }
 
+  function calcSaidaPrevista(day) {
+    if (!day || !day.entrada) return null;
+    const entradaMin = toMinutes(day.entrada);
+    // almoço real se já voltou, senão usa o padrão do config
+    const almocoReal = (day.saidaAlmoco && day.retornoAlmoco)
+      ? toMinutes(day.retornoAlmoco) - toMinutes(day.saidaAlmoco)
+      : toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
+    // ausência extra real se já voltou
+    const extraReal = (day.saidaExtra && day.retornoExtra)
+      ? toMinutes(day.retornoExtra) - toMinutes(day.saidaExtra)
+      : 0;
+    return entradaMin + expectedWorkedMinutes() + almocoReal + extraReal;
+  }
+
   function getTargetTime(next, day) {
-    // pra saída final, usa a saída prevista calculada com base na entrada real
     if (next === 'saidaFinal' && day && day.entrada) {
-      const almoco = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
-      return toMinutes(day.entrada) + expectedWorkedMinutes() + almoco;
+      return calcSaidaPrevista(day);
     }
     return toMinutes(config[next]);
   }
