@@ -140,6 +140,7 @@
   .cp-brandmark svg { display:block; width: 104px; height: auto; box-shadow: 0 2px 6px rgba(0,20,80,0.25); }
   .cp-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-bottom: 4px; }
   .cp-title { font-size: 24px; font-weight: 700; color: var(--white); }
+  .cp-saudacao { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 2px; font-weight: 400; }
   .cp-sub { font-size: 12.5px; color: rgba(255,255,255,0.8); margin-top: 4px; }
   .cp-clock { text-align: right; }
   .cp-clock-time { font-size: 26px; font-weight: 600; letter-spacing: 0.03em; color: var(--white); }
@@ -302,6 +303,7 @@
     <div class="cp-brandmark">
       <div>
         <div class="cp-title">Meu Ponto Certo</div>
+        <div class="cp-saudacao" id="cp-saudacao"></div>
       </div>
     </div>
     <div class="cp-clock">
@@ -973,9 +975,20 @@
   }
 
   // ── init ────────────────────────────────────────────────────
+  function renderSaudacao(user) {
+    const el = $('cp-saudacao');
+    if (!el) return;
+    const hora = new Date().getHours();
+    const periodo = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+    const nomeCompleto = user.user_metadata?.full_name || user.email || '';
+    const primeiroNome = nomeCompleto.split(' ')[0];
+    el.textContent = `${periodo}, ${primeiroNome}! 👋`;
+  }
+
   async function startApp(user) {
     currentUser = user;
     showApp();
+    renderSaudacao(user);
     await loadConfig();
     await loadRegistros();
     bindEvents();

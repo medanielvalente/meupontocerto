@@ -1,7 +1,7 @@
 {
-  "name": "Relógio de Ponto CLT",
-  "short_name": "Ponto Ibope",
-  "description": "Registro de jornada CLT",
+  "name": "Meu Ponto Certo",
+  "short_name": "Meu Ponto Certo",
+  "description": "Controle de jornada CLT com banco de horas",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
