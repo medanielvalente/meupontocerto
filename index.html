@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#0032ff">
+  <meta name="description" content="Relógio de Ponto CLT">
+  <meta name="apple-mobile-web-app-title" content="Relógio de Ponto CLT">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Relógio de Ponto CLT">
+  <link rel="manifest" href="manifest.json">
+  <!-- iOS splash / icon fallbacks -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Relógio de Ponto CLT</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="margin:0;padding:0;background:#0032ff;">
+
+<!-- ── TELA DE LOGIN ─────────────────────────────────────── -->
+<div id="login-screen" style="display:none;">
+<style>
+  .login-wrap {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #001e78;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    font-family: 'Geist', sans-serif;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+  }
+  .login-logo { width: 100px; margin-bottom: 22px; }
+  .login-title { font-size: 18px; font-weight: 700; color: #001e78; margin-bottom: 6px; }
+  .login-sub   { font-size: 13px; color: #52596e; margin-bottom: 24px; line-height: 1.5; }
+  .login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #0032ff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Geist', sans-serif;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .login-btn:hover { background: #0028aa; }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .login-footer { margin-top: 16px; font-size: 11px; color: #9aa3c2; }
+  @media (max-height: 600px) {
+    .login-logo { width: 72px; margin-bottom: 14px; }
+    .login-card { padding: 20px 20px; }
+    .login-sub { margin-bottom: 16px; }
+  }
+</style>
+<div class="login-wrap">
+  <div class="login-card">
+    <svg class="login-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="36" fill="#0032ff"/>
+      <circle cx="40" cy="40" r="30" fill="none" stroke="#fff" stroke-width="3"/>
+      <line x1="40" y1="40" x2="40" y2="18" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="40" y1="40" x2="54" y2="50" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="40" cy="40" r="3" fill="#fff"/>
+      <line x1="40" y1="13" x2="40" y2="17" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="63" x2="40" y2="67" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="13" y1="40" x2="17" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="63" y1="40" x2="67" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div class="login-title">Relógio de Ponto CLT</div>
+    <div class="login-sub">Acesse com sua conta Google para registrar sua jornada e acompanhar seu banco de horas.</div>
+    <button class="login-btn" id="login-google-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#fff" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#fff" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#fff" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="login-footer">Seus dados ficam protegidos e isolados na sua conta.</div>
+  </div>
+</div>
+</div>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap');
+
+  #cp-root {
+    /* Paleta oficial: Bright Blue / Mid Blue / Deep Blue + cinzas */
+    --brand: #0032ff;       /* Bright Blue — sempre sólida, nunca degradê */
+    --brand-mid: #0028aa;   /* Mid Blue */
+    --brand-deep: #001e78;  /* Deep Blue */
+    --white: #ffffff;
+    --grey-1: #fafafa;
+    --grey-2: #f5f5f7;
+    --grey-3: #e8e8ee;
+    --grey-4: #d7d7da;
+    --black: #000000;
+    --good: #146c43;        /* verde funcional (status), fora da paleta de marca */
+    --bad: #b3261e;         /* vermelho funcional (status), fora da paleta de marca */
+
+    --bg: var(--grey-1);
+    --surface: var(--white);
+    --surface-alt: var(--grey-2);
+    --border: var(--grey-3);
+    --border-strong: var(--grey-4);
+    --ink: var(--black);
+    --ink-soft: #52596e;
+
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 0 0 40px;
+    border-radius: 14px;
+    min-height: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow-x: hidden;
+  }
+  #cp-root * { box-sizing: border-box; }
+  #cp-root h1, #cp-root h2, #cp-root h3 { font-family: 'Geist', sans-serif; margin: 0; }
+  #cp-root .mono { font-family: 'Geist Mono', monospace; }
+
+  .cp-topbar { background: var(--brand); padding: 20px 18px; border-radius: 14px 14px 0 0; display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .cp-brandmark { display:flex; align-items:center; gap: 12px; }
+  .cp-brandmark svg { display:block; width: 104px; height: auto; box-shadow: 0 2px 6px rgba(0,20,80,0.25); }
+  .cp-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-bottom: 4px; }
+  .cp-title { font-size: 24px; font-weight: 700; color: var(--white); }
+  .cp-sub { font-size: 12.5px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+  .cp-clock { text-align: right; }
+  .cp-clock-time { font-size: 26px; font-weight: 600; letter-spacing: 0.03em; color: var(--white); }
+  .cp-clock-date { font-size: 11px; color: rgba(255,255,255,0.8); text-transform: capitalize; }
+
+  .cp-body { padding: 22px 18px 0; }
+
+  .cp-gear { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.4); color: var(--white); border-radius: 8px; padding: 8px 10px; font-size: 16px; cursor: pointer; line-height:1; }
+  .cp-gear:hover { background: rgba(255,255,255,0.22); }
+
+  /* punch card */
+  .cp-card-wrap { background: var(--surface); border-radius: 10px; padding: 22px 20px 26px; position: relative; box-shadow: 0 10px 26px rgba(0,30,120,0.08); border: 1px solid var(--border); }
+  .cp-card-title { color: var(--ink-soft); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+
+  .cp-slots { display: flex; flex-direction: column; gap: 10px; }
+  .cp-slots-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .cp-slots-row-extra { grid-template-columns: repeat(2, 1fr); }
+  .cp-slots-divider { display: flex; align-items: center; gap: 10px; margin: 2px 0; }
+  .cp-slots-divider::before, .cp-slots-divider::after { content:''; flex:1; height:1px; background: var(--border); }
+  .cp-slots-divider span { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+  .cp-slots-divider small { opacity: 0.6; }
+  .cp-slot-extra { background: var(--grey-1); }
+  .cp-slot { background: var(--surface-alt); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 8px; text-align: center; position: relative; min-height: 84px; display:flex; flex-direction:column; justify-content:center; transition: all .2s; cursor: pointer; }
+  .cp-slot:hover { background: var(--white); border-color: var(--brand); }
+  .cp-slot.filled { border-style: solid; background: var(--white); }
+  .cp-slot.next { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(0,50,255,0.15); animation: cp-pulse 1.8s ease-in-out infinite; }
+  @keyframes cp-pulse { 0%,100%{box-shadow:0 0 0 2px rgba(0,50,255,0.12);} 50%{box-shadow:0 0 0 6px rgba(0,50,255,0.05);} }
+  .cp-slot-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  .cp-slot-time { font-size: 20px; font-weight: 600; color: var(--brand-deep); }
+  .cp-slot-time.empty { color: var(--border-strong); }
+  .cp-slot-expected { font-size: 10px; color: var(--ink-soft); margin-top: 2px; opacity: 0.7; }
+  .cp-slot-edit { position:absolute; top:4px; right:6px; background:none; border:none; cursor:pointer; font-size:11px; opacity:0.45; padding:2px; }
+  .cp-slot-edit:hover { opacity: 1; }
+  .cp-slot-manual-tag { position:absolute; bottom:4px; right:6px; font-size:9px; color: var(--brand); font-weight:600; }
+
+  .cp-stamp-btn-wrap { display:flex; justify-content:center; margin-top: 22px; }
+  .cp-stamp-btn { position: relative; background: var(--brand); color: var(--white); border: none; border-radius: 999px; padding: 16px 34px; font-family:'Geist'; font-weight:700; font-size: 15px; letter-spacing:0.04em; cursor: pointer; box-shadow: 0 10px 24px rgba(0,50,255,0.3); transition: transform .12s, background .12s; }
+  .cp-stamp-btn:hover:not(:disabled) { background: var(--brand-mid); transform: translateY(-2px); }
+  .cp-stamp-btn:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+  .cp-stamp-btn:disabled { background: var(--border-strong); color: var(--ink-soft); cursor: not-allowed; box-shadow:none; opacity: 0.8; }
+
+  .cp-stamp-mark { position: fixed; pointer-events: none; z-index: 999; font-family:'Geist'; font-weight:700; color: var(--brand); border: 3px solid var(--brand); border-radius: 8px; padding: 6px 14px; font-size: 13px; opacity: 0; transform: scale(2.4) rotate(-14deg); background: rgba(255,255,255,0.9); }
+  @keyframes cp-stamp-hit { 0%{opacity:0; transform: scale(2.4) rotate(-14deg);} 45%{opacity:0.95; transform: scale(0.92) rotate(-8deg);} 60%{opacity:0.95; transform: scale(1.05) rotate(-10deg);} 100%{opacity:0; transform: scale(1) rotate(-9deg);} }
+
+  /* summary */
+  .cp-summary-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 20px; }
+  .cp-summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .cp-summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; }
+  .cp-summary-value { font-size: 22px; font-weight: 600; font-family:'Geist Mono'; color: var(--brand-deep); }
+  .cp-summary-value.good { color: var(--good); }
+  .cp-summary-value.bad { color: var(--bad); }
+  .cp-summary-note { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+  /* reminder banner */
+  .cp-banner { margin-top: 16px; background: #eef1ff; border: 1px solid rgba(0,50,255,0.3); color: var(--brand-deep); border-radius: 8px; padding: 10px 14px; font-size: 12.5px; display:flex; align-items:center; gap: 8px; }
+  .cp-notif-btn { background: var(--surface); border: 1px solid var(--border-strong); color: var(--brand-deep); border-radius: 7px; padding: 8px 12px; font-size: 12px; cursor: pointer; margin-top: 14px; }
+  .cp-notif-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+  /* history */
+  .cp-history { margin-top: 26px; }
+  .cp-history-head { display:flex; justify-content: space-between; align-items:center; cursor:pointer; }
+  .cp-history-toggle { font-size: 12px; color: var(--ink-soft); }
+  .cp-history-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; background: var(--surface); border-radius: 8px; overflow:hidden; }
+  .cp-history-table th { text-align:left; color: var(--white); background: var(--brand-deep); font-weight:500; text-transform:uppercase; font-size:10px; letter-spacing:0.06em; padding: 8px 8px; }
+  .cp-history-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-family:'Geist Mono'; }
+  .cp-history-table tr:hover td { background: var(--surface-alt); }
+  .cp-saldo-good { color: var(--good); }
+  .cp-saldo-bad { color: var(--bad); }
+  .cp-edit-row-btn { background:none; border:none; color: var(--ink-soft); cursor:pointer; font-size:12px; }
+  .cp-edit-row-btn:hover { color: var(--brand); }
+  .cp-del-row-btn { background:none; border:none; color: var(--border-strong); cursor:pointer; font-size:13px; margin-left:4px; padding:0 2px; transition: color .15s; }
+  .cp-del-row-btn:hover { color: var(--bad); }
+
+  .cp-sheets-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .cp-sync-status-text { font-size:11.5px; color: var(--ink-soft); }
+  .cp-sheets-link-btn { display:inline-flex; align-items:center; gap:5px; background: var(--brand); color: var(--white); border:none; border-radius:7px; padding:6px 12px; font-size:12px; font-family:'Geist'; font-weight:600; cursor:pointer; text-decoration:none; transition: background .12s; }
+  .cp-sheets-link-btn:hover { background: var(--brand-mid); }
+
+  .cp-btn-danger { background: var(--bad); color: var(--white); border:none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor:pointer; font-size: 13px; }
+  .cp-btn-danger:hover { opacity: 0.88; }
+
+  /* modal */
+  .cp-modal-overlay { position: fixed; inset: 0; background: rgba(0,30,120,0.45); display:flex; align-items:center; justify-content:center; z-index: 1000; }
+  .cp-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; width: min(360px, 90vw); box-shadow: 0 20px 50px rgba(0,30,120,0.25); }
+  .cp-modal h3 { color: var(--brand-deep); font-size: 16px; margin-bottom: 14px; }
+  .cp-field { margin-bottom: 12px; }
+  .cp-field label { display:block; font-size: 11px; color: var(--ink-soft); margin-bottom: 4px; text-transform:uppercase; letter-spacing:0.05em; }
+  .cp-field input[type=time], .cp-field input[type=number] { width: 100%; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--brand-deep); padding: 8px 10px; font-family:'Geist Mono'; font-size: 14px; }
+  .cp-modal-actions { display:flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  .cp-btn-primary { background: var(--brand); color: var(--white); border:none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor:pointer; font-size: 13px; }
+  .cp-btn-primary:hover { background: var(--brand-mid); }
+  .cp-btn-ghost { background:none; border: 1px solid var(--border-strong); color: var(--ink-soft); border-radius: 7px; padding: 8px 16px; cursor:pointer; font-size: 13px; }
+
+  .cp-progress-wrap { height: 4px; background: var(--border); border-radius: 99px; margin: 8px 0 6px; overflow: hidden; }
+  .cp-progress-bar { height: 100%; width: 0%; border-radius: 99px; background: var(--brand); transition: width .6s ease, background .4s; }
+  .cp-progress-bar.done { background: var(--good); }
+  .cp-progress-bar.over { background: var(--gold, #c89b3c); }
+
+  /* ── Responsividade mobile ─────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    #cp-root { border-radius: 0; padding-bottom: 60px; }
+
+    /* topbar: empilha logo+texto em cima, relógio embaixo */
+    .cp-topbar { flex-direction: column; gap: 14px; padding: 16px 14px; border-radius: 0; }
+    .cp-brandmark { gap: 10px; }
+    .cp-brandmark svg { width: 80px; }
+    .cp-title { font-size: 20px; }
+    .cp-sub { font-size: 11.5px; }
+    .cp-clock { text-align: left; }
+    .cp-clock-time { font-size: 32px; }
+    .cp-clock-date { font-size: 12px; }
+
+    /* body */
+    .cp-body { padding: 14px 12px 0; }
+
+    /* slots: linha principal 2x2, extra já é 2 colunas */
+    .cp-slots-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .cp-slots-row-extra { grid-template-columns: repeat(2, 1fr); }
+    .cp-slot { min-height: 80px; padding: 12px 10px; }
+    .cp-slot-time { font-size: 22px; }
+    .cp-slot-label { font-size: 10px; }
+
+    /* botão de ponto: maior e mais fácil de tocar */
+    .cp-stamp-btn { width: 100%; padding: 18px 20px; font-size: 16px; border-radius: 12px; }
+    .cp-stamp-btn-wrap { margin-top: 16px; }
+
+    /* summary: mantém 2 colunas mas ajusta padding */
+    .cp-summary-grid { gap: 10px; grid-template-columns: 1fr 1fr; }
+    .cp-summary-box:last-child { grid-column: 1 / -1; }
+    .cp-summary-box { padding: 12px 12px; }
+    .cp-summary-value { font-size: 20px; }
+
+    /* botões de ação menores */
+    .cp-notif-btn { width: 100%; text-align: center; padding: 10px; font-size: 13px; }
+
+    /* histórico: tabela com scroll horizontal */
+    .cp-history { margin-top: 20px; }
+    .cp-history-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cp-history-table { font-size: 11px; min-width: 480px; }
+    .cp-history-table th, .cp-history-table td { padding: 7px 6px; }
+
+    /* modal: sobe do bottom em vez de centralizar */
+    .cp-modal-overlay { align-items: flex-end; }
+    .cp-modal {
+      width: 100%;
+      border-radius: 16px 16px 0 0;
+      padding: 24px 20px 32px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .cp-field input[type=time],
+    .cp-field input[type=number],
+    .cp-field input[type=url] { font-size: 16px; padding: 10px 12px; } /* 16px evita zoom no iOS */
+    .cp-btn-primary, .cp-btn-ghost { padding: 12px 18px; font-size: 14px; }
+  }
+</style>
+
+<div id="cp-root">
+  <div class="cp-topbar">
+    <div class="cp-brandmark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="36" fill="#fff" fill-opacity="0.15"/>
+        <circle cx="40" cy="40" r="30" fill="none" stroke="#fff" stroke-width="3"/>
+        <line x1="40" y1="40" x2="40" y2="18" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="54" y2="50" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="40" cy="40" r="3" fill="#fff"/>
+        <line x1="40" y1="13" x2="40" y2="17" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="40" y1="63" x2="40" y2="67" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="13" y1="40" x2="17" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="63" y1="40" x2="67" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="cp-title">Relógio de Ponto CLT</div>
+      </div>
+    </div>
+    <div class="cp-clock">
+      <div style="display:flex;align-items:flex-start;gap:10px;justify-content:flex-end;">
+        <div>
+          <div class="cp-clock-time mono" id="cp-clock-time">--:--:--</div>
+          <div class="cp-clock-date" id="cp-clock-date"></div>
+        </div>
+        <button class="cp-gear" id="cp-open-config" title="Ajustar horários">⚙</button>
+        <button class="cp-gear" id="cp-logout-btn" title="Sair" style="font-size:14px;">↩</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cp-body">
+  <div class="cp-card-wrap">
+    <div class="cp-card-title">Hoje</div>
+    <div class="cp-slots" id="cp-slots"></div>
+    <div class="cp-stamp-btn-wrap">
+      <button class="cp-stamp-btn" id="cp-stamp-btn">Bater ponto</button>
+    </div>
+  </div>
+
+  <div class="cp-summary-grid">
+    <div class="cp-summary-box">
+      <div class="cp-summary-label">Trabalhado hoje</div>
+      <div class="cp-summary-value mono" id="cp-today-worked">--:--</div>
+      <div class="cp-progress-wrap">
+        <div class="cp-progress-bar" id="cp-progress-bar"></div>
+      </div>
+    </div>
+    <div class="cp-summary-box">
+      <div class="cp-summary-label">Previsão de saída</div>
+      <div class="cp-summary-value mono" id="cp-saida-prevista">--:--</div>
+      <div class="cp-summary-note" id="cp-saida-prevista-note">aguardando entrada</div>
+    </div>
+    <div class="cp-summary-box">
+      <div class="cp-summary-label">Banco de horas (total)</div>
+      <div class="cp-summary-value mono" id="cp-banco-total">--:--</div>
+      <div class="cp-summary-note" id="cp-banco-note">acumulado dos dias fechados</div>
+    </div>
+  </div>
+
+  <div class="cp-sheets-bar">
+    <div id="cp-sync-status" class="cp-sync-status-text">Google Sheets: não configurado</div>
+    <button class="cp-sheets-link-btn" id="cp-open-sheets" style="display:none">↗ Abrir planilha</button>
+  </div>
+
+  <div class="cp-history">
+    <div class="cp-history-head" id="cp-history-toggle">
+      <h3 style="font-size:14px; color:var(--brand-deep);">Histórico</h3>
+      <span class="cp-history-toggle" id="cp-history-arrow">mostrar ▾</span>
+    </div>
+    <div id="cp-history-body" style="display:none;">
+      <div class="cp-history-table-wrap">
+      <table class="cp-history-table" id="cp-history-table">
+        <thead><tr><th>Data</th><th>Entrada</th><th>Saída alm.</th><th>Retorno</th><th>Saída extra</th><th>Retorno extra</th><th>Saída</th><th>Trab.</th><th>Saldo</th><th></th></tr></thead>
+        <tbody id="cp-history-tbody"></tbody>
+      </table>
+      </div>
+      <div class="cp-empty-hist" id="cp-empty-hist" style="display:none;">Nenhum dia registrado ainda.</div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── Supabase ────────────────────────────────────────────────
+  const SUPA_URL = 'https://mbywtlbhzficeafdgtug.supabase.co';
+  const SUPA_KEY = 'sb_publishable_u9M1VQ4Q9G7pQpXjCmDrbQ_u-Cwj5OO';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+    auth: {
+      flowType: 'pkce',
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage
+    }
+  });
+
+  let currentUser = null;
+
+  const SLOT_DEFS = [
+    { key: 'entrada',        label: 'Entrada',        row: 1 },
+    { key: 'saidaAlmoco',   label: 'Saída almoço',   row: 1 },
+    { key: 'retornoAlmoco', label: 'Retorno almoço',  row: 1 },
+    { key: 'saidaFinal',    label: 'Saída',           row: 1 },
+    { key: 'saidaExtra',    label: 'Saída extra',     row: 2 },
+    { key: 'retornoExtra',  label: 'Retorno extra',   row: 2 },
+  ];
+
+  // mapa entre chaves do app e colunas do Supabase
+  const KEY_MAP = {
+    entrada: 'entrada', saidaAlmoco: 'saida_almoco',
+    retornoAlmoco: 'retorno_almoco', saidaFinal: 'saida_final',
+    saidaExtra: 'saida_extra', retornoExtra: 'retorno_extra'
+  };
+
+  const DEFAULT_CONFIG = {
+    entrada:'09:00', saidaAlmoco:'12:00', retornoAlmoco:'13:00',
+    saidaFinal:'18:19', saidaExtra:'', retornoExtra:'',
+    lembreteAntecedencia:5, saldoInicialMinutos:0,
+    sheetsUrl:'', sheetsSpreadsheetUrl:''
+  };
+  let config = { ...DEFAULT_CONFIG };
+  let registros = {};
+  let notifOn = false;
+  let lastNotified = {};
+
+  const $ = id => document.getElementById(id);
+
+  // ── utils ───────────────────────────────────────────────────
+  function todayKey(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function toMinutes(hhmm) {
+    if (!hhmm) return null;
+    const [h,m] = hhmm.split(':').map(Number);
+    return h*60+m;
+  }
+  function minutesToHHMM(total, signed) {
+    const sign = total < 0 ? '-' : (signed ? '+' : '');
+    const abs = Math.abs(total);
+    const h = Math.floor(abs/60), m = abs%60;
+    return sign + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+  function minutesToHHMMSS(total) {
+    const abs = Math.abs(total);
+    const h = Math.floor(abs/60), m = Math.floor(abs%60), s = Math.floor((abs*60)%60);
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  function nowHHMM() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
+  // ── auth ────────────────────────────────────────────────────
+  async function signInWithGoogle() {
+    const btn = $('login-google-btn');
+    btn.disabled = true;
+    btn.textContent = 'Aguarde...';
+    const redirectTo = location.hostname === 'localhost'
+      ? location.origin + location.pathname
+      : 'https://relogiodeponto.vercel.app/';
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: false }
+    });
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    location.reload();
+  }
+
+  function showLogin() {
+    $('login-screen').style.display = 'block';
+    $('cp-root').style.display = 'none';
+  }
+  function showApp() {
+    $('login-screen').style.display = 'none';
+    $('cp-root').style.display = 'block';
+  }
+
+  // ── Supabase: config ────────────────────────────────────────
+  async function loadConfig() {
+    const { data } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
+    if (data) {
+      config = {
+        entrada:              data.entrada              || DEFAULT_CONFIG.entrada,
+        saidaAlmoco:          data.saida_almoco         || DEFAULT_CONFIG.saidaAlmoco,
+        retornoAlmoco:        data.retorno_almoco       || DEFAULT_CONFIG.retornoAlmoco,
+        saidaFinal:           data.saida_final          || DEFAULT_CONFIG.saidaFinal,
+        saidaExtra:           data.saida_extra          || '',
+        retornoExtra:         data.retorno_extra        || '',
+        lembreteAntecedencia: data.lembrete_antecedencia ?? 5,
+        saldoInicialMinutos:  data.saldo_inicial_minutos ?? 0,
+        sheetsUrl:            '',
+        sheetsSpreadsheetUrl: ''
+      };
+    }
+  }
+
+  async function saveConfig() {
+    await sb.from('configuracoes').upsert({
+      user_id:               currentUser.id,
+      entrada:               config.entrada,
+      saida_almoco:          config.saidaAlmoco,
+      retorno_almoco:        config.retornoAlmoco,
+      saida_final:           config.saidaFinal,
+      saida_extra:           config.saidaExtra,
+      retorno_extra:         config.retornoExtra,
+      lembrete_antecedencia: config.lembreteAntecedencia,
+      saldo_inicial_minutos: config.saldoInicialMinutos
+    }, { onConflict: 'user_id' });
+  }
+
+  // ── Supabase: registros ─────────────────────────────────────
+  async function loadRegistros() {
+    setSyncStatus('Carregando registros...');
+    const { data, error } = await sb.from('registros')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('data', { ascending: false });
+    if (error) { setSyncStatus('Erro ao carregar registros'); return; }
+    registros = {};
+    (data || []).forEach(r => {
+      registros[r.data] = {
+        entrada:       r.entrada       || '',
+        saidaAlmoco:   r.saida_almoco  || '',
+        retornoAlmoco: r.retorno_almoco|| '',
+        saidaFinal:    r.saida_final   || '',
+        saidaExtra:    r.saida_extra   || '',
+        retornoExtra:  r.retorno_extra || '',
+        manual:        r.manual ? { _any: true } : {}
+      };
+    });
+    setSyncStatus('Sincronizado às ' + nowHHMM());
+  }
+
+  async function saveRegistro(key) {
+    const day = registros[key];
+    if (!day) return;
+    const worked = workedMinutesForDay(day);
+    const expected = expectedWorkedMinutes();
+    const saldo = worked !== null ? worked - expected : null;
+    const manual = !!(day.manual && Object.keys(day.manual).length);
+    await sb.from('registros').upsert({
+      user_id:        currentUser.id,
+      data:           key,
+      entrada:        day.entrada       || null,
+      saida_almoco:   day.saidaAlmoco   || null,
+      retorno_almoco: day.retornoAlmoco || null,
+      saida_final:    day.saidaFinal    || null,
+      saida_extra:    day.saidaExtra    || null,
+      retorno_extra:  day.retornoExtra  || null,
+      trabalhado:     worked !== null ? minutesToHHMM(worked) : null,
+      meta:           minutesToHHMM(expected),
+      saldo:          saldo  !== null ? minutesToHHMM(saldo, true) : null,
+      manual
+    }, { onConflict: 'user_id,data' });
+    setSyncStatus('Salvo às ' + nowHHMM());
+  }
+
+  async function deleteRegistro(key) {
+    await sb.from('registros').delete()
+      .eq('user_id', currentUser.id).eq('data', key);
+    delete registros[key];
+    setSyncStatus('Registro excluído');
+  }
+
+  // ── lógica de negócio ───────────────────────────────────────
+  function expectedWorkedMinutes() {
+    const total = toMinutes(config.saidaFinal) - toMinutes(config.entrada);
+    const lunch = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
+    return total - lunch;
+  }
+  function workedMinutesForDay(day) {
+    if (!day) return null;
+    const { entrada, saidaAlmoco, retornoAlmoco, saidaFinal, saidaExtra, retornoExtra } = day;
+    if (!entrada || !saidaAlmoco || !retornoAlmoco || !saidaFinal) return null;
+    let total = (toMinutes(saidaAlmoco)-toMinutes(entrada)) + (toMinutes(saidaFinal)-toMinutes(retornoAlmoco));
+    if (saidaExtra && retornoExtra) total -= (toMinutes(retornoExtra)-toMinutes(saidaExtra));
+    return total;
+  }
+  function workedMinutesLive(day) {
+    if (!day || !day.entrada) return null;
+    if (day.saidaFinal) return workedMinutesForDay(day);
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+    let total = nowMin - toMinutes(day.entrada);
+    if (day.saidaAlmoco && day.retornoAlmoco) {
+      total -= (toMinutes(day.retornoAlmoco)-toMinutes(day.saidaAlmoco));
+    } else if (day.saidaAlmoco && !day.retornoAlmoco) {
+      total -= (nowMin - toMinutes(day.saidaAlmoco));
+    }
+    if (day.saidaExtra && day.retornoExtra) {
+      total -= (toMinutes(day.retornoExtra)-toMinutes(day.saidaExtra));
+    } else if (day.saidaExtra && !day.retornoExtra) {
+      total -= (nowMin - toMinutes(day.saidaExtra));
+    }
+    return Math.max(0, total);
+  }
+  function isOnBreak(day) {
+    if (!day) return false;
+    return (day.saidaAlmoco && !day.retornoAlmoco) || (day.saidaExtra && !day.retornoExtra);
+  }
+  // slots obrigatórios — definem a sequência principal de lembrete
+  const MAIN_SLOTS = ['entrada','saidaAlmoco','retornoAlmoco','saidaFinal'];
+
+  function nextSlotKey(day) {
+    // primeiro tenta a sequência principal
+    for (const key of MAIN_SLOTS) {
+      if (!day || !day[key]) return key;
+    }
+    // só vai pros extras se o dia principal estiver completo
+    for (const s of SLOT_DEFS) {
+      if (s.row === 2 && (!day || !day[s.key])) return s.key;
+    }
+    return null;
+  }
+  function calcBancoTotal() {
+    const expected = expectedWorkedMinutes();
+    let bancoRegistros = 0;
+    Object.values(registros).forEach(d => {
+      const w = workedMinutesForDay(d);
+      if (w !== null) bancoRegistros += (w - expected);
+    });
+    const saldoInicial = parseInt(config.saldoInicialMinutos, 10) || 0;
+    return { bancoRegistros, saldoInicial, bancoTotal: bancoRegistros + saldoInicial };
+  }
+
+  // ── render ──────────────────────────────────────────────────
+  function setSyncStatus(text) {
+    const el = $('cp-sync-status');
+    if (el) el.textContent = text;
+  }
+  function render() { renderClock(); renderSlots(); renderSummary(); renderHistory(); }
+
+  function renderClock() {
+    const d = new Date();
+    $('cp-clock-time').textContent = d.toLocaleTimeString('pt-BR');
+    $('cp-clock-date').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'short' });
+  }
+
+  function renderSlots() {
+    const key = todayKey();
+    const day = registros[key] || {};
+    const next = nextSlotKey(day);
+    const wrap = $('cp-slots');
+    wrap.innerHTML = '';
+    const row1 = document.createElement('div'); row1.className = 'cp-slots-row';
+    const divider = document.createElement('div'); divider.className = 'cp-slots-divider';
+    divider.innerHTML = '<span>Ausência temporária <small>(opcional)</small></span>';
+    const row2 = document.createElement('div'); row2.className = 'cp-slots-row cp-slots-row-extra';
+    SLOT_DEFS.forEach(s => {
+      const filled = !!day[s.key];
+      const el = document.createElement('div');
+      el.className = 'cp-slot'+(filled?' filled':'')+(s.key===next?' next':'')+(s.row===2?' cp-slot-extra':'');
+      const expected = config[s.key];
+      el.innerHTML = `
+        <div class="cp-slot-label">${s.label}</div>
+        <div class="cp-slot-time mono ${filled?'':'empty'}">${filled?day[s.key]:'--:--'}</div>
+        ${expected?`<div class="cp-slot-expected mono">prev. ${expected}</div>`:'<div class="cp-slot-expected mono">—</div>'}
+        <button class="cp-slot-edit" data-slot="${s.key}" title="Editar">✎</button>
+        ${day.manual&&day.manual[s.key]?'<div class="cp-slot-manual-tag">manual</div>':''}
+      `;
+      el.addEventListener('click', () => openManualEdit(key, s.key));
+      if (s.row===1) row1.appendChild(el); else row2.appendChild(el);
+    });
+    wrap.appendChild(row1); wrap.appendChild(divider); wrap.appendChild(row2);
+    wrap.querySelectorAll('.cp-slot-edit').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); openManualEdit(key, e.currentTarget.dataset.slot); });
+    });
+    const btn = $('cp-stamp-btn');
+    btn.textContent = !next ? 'Dia completo ✓' : 'Bater Ponto';
+    btn.disabled = !next;
+  }
+
+  function renderSummary() {
+    const key = todayKey();
+    const day = registros[key];
+    const expected = expectedWorkedMinutes();
+    const dayComplete = day && day.saidaFinal;
+    const workedDisplay = dayComplete ? workedMinutesForDay(day) : workedMinutesLive(day);
+    const todayEl = $('cp-today-worked');
+    const progressEl = $('cp-progress-bar');
+    if (workedDisplay === null) {
+      todayEl.textContent = '--:--'; todayEl.style.color = '';
+      if (progressEl) { progressEl.style.width='0%'; progressEl.className='cp-progress-bar'; }
+    } else {
+      const pct = Math.min((workedDisplay/expected)*100, 100);
+      todayEl.textContent = dayComplete ? minutesToHHMM(workedDisplay) : minutesToHHMMSS(workedDisplay);
+      todayEl.style.color = workedDisplay>=expected ? 'var(--good)' : isOnBreak(day) ? 'var(--ink-soft)' : 'var(--brand-deep)';
+      if (progressEl) {
+        progressEl.style.width = pct+'%';
+        progressEl.className = 'cp-progress-bar'+(workedDisplay>=expected?(workedDisplay-expected>0?' over':' done'):'');
+      }
+    }
+    const { bancoRegistros, saldoInicial, bancoTotal } = calcBancoTotal();
+    const bancoEl = $('cp-banco-total');
+    bancoEl.textContent = minutesToHHMM(bancoTotal, true);
+    bancoEl.className = 'cp-summary-value mono '+(bancoTotal>=0?'good':'bad');
+    $('cp-banco-note').textContent = saldoInicial!==0
+      ? `registros ${minutesToHHMM(bancoRegistros,true)} · saldo inicial ${minutesToHHMM(saldoInicial,true)}`
+      : 'acumulado dos dias registrados';
+
+    // previsão de saída = entrada + meta + almoço
+    const saidaPrevistaEl = $('cp-saida-prevista');
+    const saidaNoteEl = $('cp-saida-prevista-note');
+    if (day && day.entrada) {
+      const entradaMin = toMinutes(day.entrada);
+      const almoco = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
+      const saidaMin = entradaMin + expectedWorkedMinutes() + almoco;
+      const saidaH = Math.floor(saidaMin / 60) % 24;
+      const saidaM = saidaMin % 60;
+      const saidaStr = String(saidaH).padStart(2,'0') + ':' + String(saidaM).padStart(2,'0');
+      saidaPrevistaEl.textContent = saidaStr;
+      saidaPrevistaEl.style.color = day.saidaFinal
+        ? 'var(--ink-soft)'
+        : 'var(--brand-deep)';
+      saidaNoteEl.textContent = day.saidaFinal
+        ? `saída às ${day.saidaFinal}`
+        : `entrada às ${day.entrada}`;
+    } else {
+      saidaPrevistaEl.textContent = '--:--';
+      saidaPrevistaEl.style.color = '';
+      saidaNoteEl.textContent = 'aguardando entrada';
+    }
+  }
+
+  function formatDate(key) {
+    // converte YYYY-MM-DD → DD-MM-AA
+    const [y, m, d] = key.split('-');
+    return `${d}-${m}-${y.slice(2)}`;
+  }
+
+  function renderHistory() {
+    const tbody = $('cp-history-tbody');
+    tbody.innerHTML = '';
+    const dates = Object.keys(registros).sort().reverse().slice(0, 7);
+    $('cp-empty-hist').style.display = dates.length ? 'none' : 'block';
+    const expected = expectedWorkedMinutes();
+    dates.forEach(key => {
+      const d = registros[key];
+      const worked = workedMinutesForDay(d);
+      const saldo = worked !== null ? worked - expected : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${formatDate(key)}</td>
+        <td>${d.entrada||'—'}</td><td>${d.saidaAlmoco||'—'}</td>
+        <td>${d.retornoAlmoco||'—'}</td><td>${d.saidaExtra||'—'}</td>
+        <td>${d.retornoExtra||'—'}</td><td>${d.saidaFinal||'—'}</td>
+        <td>${worked!==null?minutesToHHMM(worked):'—'}</td>
+        <td class="${saldo===null?'':(saldo>=0?'cp-saldo-good':'cp-saldo-bad')}">${saldo!==null?minutesToHHMM(saldo,true):'—'}</td>
+        <td>
+          <button class="cp-edit-row-btn" data-key="${key}">editar</button>
+          <button class="cp-del-row-btn" data-key="${key}" title="Excluir">🗑</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.cp-edit-row-btn').forEach(btn => btn.addEventListener('click', e => openDayEditor(e.currentTarget.dataset.key)));
+    tbody.querySelectorAll('.cp-del-row-btn').forEach(btn => btn.addEventListener('click', e => confirmDeleteDay(e.currentTarget.dataset.key)));
+  }
+
+  // ── ações ───────────────────────────────────────────────────
+  async function punch() {
+    const key = todayKey();
+    const day = registros[key] || {};
+    const next = nextSlotKey(day);
+    if (!next) return;
+    day[next] = nowHHMM();
+    registros[key] = day;
+    stampAnimation(next);
+    render();
+    await saveRegistro(key);
+  }
+
+  function stampAnimation(slotKey) {
+    const btn = $('cp-stamp-btn');
+    const rect = btn.getBoundingClientRect();
+    const mark = document.createElement('div');
+    mark.className = 'cp-stamp-mark';
+    mark.textContent = nowHHMM();
+    mark.style.cssText = `left:${rect.left+rect.width/2-40}px;top:${rect.top-30}px;animation:cp-stamp-hit 0.7s ease-out forwards;`;
+    document.body.appendChild(mark);
+    setTimeout(() => mark.remove(), 750);
+  }
+
+  // ── modais ──────────────────────────────────────────────────
+  function mountOverlay(overlay) {
+    document.querySelectorAll('.cp-modal-overlay').forEach(o => o.remove());
+    const box = overlay.querySelector('.cp-modal');
+    if (box) box.addEventListener('click', e => e.stopPropagation());
+    overlay.addEventListener('click', () => overlay.remove());
+    $('cp-root').appendChild(overlay);
+    return overlay;
+  }
+
+  function openManualEdit(key, slotKey) {
+    const day = registros[key] || {};
+    const label = SLOT_DEFS.find(s => s.key===slotKey).label;
+    const overlay = document.createElement('div');
+    overlay.className = 'cp-modal-overlay';
+    overlay.innerHTML = `
+      <div class="cp-modal">
+        <h3>Registrar · ${label}</h3>
+        <div class="cp-field"><label>Horário</label>
+          <input type="time" id="cp-manual-time" value="${day[slotKey]||config[slotKey]||''}">
+        </div>
+        <div class="cp-modal-actions">
+          <button type="button" class="cp-btn-ghost" id="cp-manual-cancel">Cancelar</button>
+          <button type="button" class="cp-btn-primary" id="cp-manual-save">Salvar</button>
+        </div>
+      </div>`;
+    mountOverlay(overlay);
+    overlay.querySelector('#cp-manual-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#cp-manual-save').onclick = async () => {
+      const val = overlay.querySelector('#cp-manual-time').value;
+      if (!val) return;
+      day[slotKey] = val;
+      day.manual = day.manual || {}; day.manual[slotKey] = true;
+      registros[key] = day;
+      overlay.remove(); render();
+      await saveRegistro(key);
+    };
+  }
+
+  function openDayEditor(key) {
+    const day = registros[key] || {};
+    const overlay = document.createElement('div');
+    overlay.className = 'cp-modal-overlay';
+    overlay.innerHTML = `
+      <div class="cp-modal">
+        <h3>Editar dia · ${key}</h3>
+        ${SLOT_DEFS.map(s=>`<div class="cp-field"><label>${s.label}</label>
+          <input type="time" data-key="${s.key}" value="${day[s.key]||''}"></div>`).join('')}
+        <div class="cp-modal-actions">
+          <button type="button" class="cp-btn-ghost" id="cp-day-cancel">Cancelar</button>
+          <button type="button" class="cp-btn-primary" id="cp-day-save">Salvar</button>
+        </div>
+      </div>`;
+    mountOverlay(overlay);
+    overlay.querySelector('#cp-day-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#cp-day-save').onclick = async () => {
+      const newDay = { manual: day.manual||{} };
+      overlay.querySelectorAll('input[type=time]').forEach(inp => {
+        if (inp.value) { newDay[inp.dataset.key]=inp.value; newDay.manual[inp.dataset.key]=true; }
+      });
+      registros[key] = newDay;
+      overlay.remove(); render();
+      await saveRegistro(key);
+    };
+  }
+
+  function confirmDeleteDay(key) {
+    const overlay = document.createElement('div');
+    overlay.className = 'cp-modal-overlay';
+    overlay.innerHTML = `
+      <div class="cp-modal">
+        <h3>Excluir registro</h3>
+        <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;">Tem certeza que deseja excluir o registro de <strong>${key}</strong>?</p>
+        <div class="cp-modal-actions">
+          <button type="button" class="cp-btn-ghost" id="cp-del-cancel">Cancelar</button>
+          <button type="button" class="cp-btn-danger" id="cp-del-confirm">Excluir</button>
+        </div>
+      </div>`;
+    mountOverlay(overlay);
+    overlay.querySelector('#cp-del-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#cp-del-confirm').onclick = async () => {
+      overlay.remove();
+      await deleteRegistro(key);
+      render();
+    };
+  }
+
+  function openConfig() {
+    const overlay = document.createElement('div');
+    overlay.className = 'cp-modal-overlay';
+    overlay.innerHTML = `
+      <div class="cp-modal">
+        <h3>Ajustar horários padrão</h3>
+        ${SLOT_DEFS.filter(s=>s.row===1).map(s=>`
+          <div class="cp-field"><label>${s.label}</label>
+            <input type="time" data-key="${s.key}" value="${config[s.key]}"></div>`).join('')}
+        <div class="cp-field">
+          <label>Saldo inicial do banco de horas</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="cp-cfg-saldo-sinal" style="background:var(--surface-alt);border:1px solid var(--border-strong);border-radius:6px;padding:8px 6px;color:var(--brand-deep);font-family:'Geist';font-size:14px;">
+              <option value="1"  ${(config.saldoInicialMinutos||0)>=0?'selected':''}>+</option>
+              <option value="-1" ${(config.saldoInicialMinutos||0)<0?'selected':''}>−</option>
+            </select>
+            <input type="time" id="cp-cfg-saldo-hhmm" value="${minutesToHHMM(Math.abs(parseInt(config.saldoInicialMinutos,10)||0))}" style="flex:1">
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-soft);margin-top:4px;">Saldo acumulado antes de começar a usar o app</div>
+        </div>
+        <div class="cp-field">
+          <label>Lembrete com antecedência (min)</label>
+          <input type="number" id="cp-cfg-lembrete" min="0" max="30" value="${config.lembreteAntecedencia}">
+        </div>
+        <div class="cp-modal-actions">
+          <button type="button" class="cp-btn-ghost" id="cp-cfg-cancel">Cancelar</button>
+          <button type="button" class="cp-btn-primary" id="cp-cfg-save">Salvar</button>
+        </div>
+      </div>`;
+    mountOverlay(overlay);
+    overlay.querySelector('#cp-cfg-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#cp-cfg-save').onclick = async () => {
+      overlay.querySelectorAll('input[type=time]').forEach(inp => { if (inp.dataset.key) config[inp.dataset.key]=inp.value; });
+      const saldoRaw = overlay.querySelector('#cp-cfg-saldo-hhmm').value||'00:00';
+      const saldoSinal = Number(overlay.querySelector('#cp-cfg-saldo-sinal').value)||1;
+      const partes = saldoRaw.split(':');
+      config.saldoInicialMinutos = saldoSinal*((parseInt(partes[0],10)||0)*60+(parseInt(partes[1],10)||0));
+      config.lembreteAntecedencia = Number(overlay.querySelector('#cp-cfg-lembrete').value)||0;
+      await saveConfig();
+      overlay.remove(); render();
+    };
+  }
+
+  // ── lembretes ───────────────────────────────────────────────
+  // ── som de alerta ────────────────────────────────────────────
+  function playAlertSound(urgent) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const beeps = urgent ? [880, 880] : [660];
+      let time = ctx.currentTime;
+      beeps.forEach(freq => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.35, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
+        osc.start(time); osc.stop(time + 0.35);
+        time += 0.45;
+      });
+    } catch(e) { /* browser não suporta, silencia */ }
+  }
+
+  function notify(title, body, urgent) {
+    playAlertSound(urgent);
+    if (Notification.permission==='granted') new Notification(title, { body });
+  }
+
+  function getTargetTime(next, day) {
+    // pra saída final, usa a saída prevista calculada com base na entrada real
+    if (next === 'saidaFinal' && day && day.entrada) {
+      const almoco = toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
+      return toMinutes(day.entrada) + expectedWorkedMinutes() + almoco;
+    }
+    return toMinutes(config[next]);
+  }
+
+  function checkReminders() {
+    const key = todayKey();
+    const day = registros[key]||{};
+    const next = nextSlotKey(day);
+    if (!next) return;
+    const now = new Date();
+    const nowMin = now.getHours()*60+now.getMinutes();
+    const targetMin = getTargetTime(next, day);
+    if (!targetMin) return;
+    const lead = config.lembreteAntecedencia||0;
+    const label = SLOT_DEFS.find(s=>s.key===next).label;
+    const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
+    if (nowMin>=targetMin && !lastNotified[key+next+'late']) {
+      notify('Ponto pendente', `${label} — previsto ${targetStr}`, true);
+      lastNotified[key+next+'late'] = true;
+    } else if (lead > 0 && targetMin-nowMin <= lead && targetMin-nowMin >= 0 && !lastNotified[key+next+'soon']) {
+      notify('Ponto se aproximando', `${label} em ${targetMin-nowMin} min (${targetStr})`, false);
+      lastNotified[key+next+'soon'] = true;
+    }
+  }
+
+  // ── bind ────────────────────────────────────────────────────
+  function bindEvents() {
+    $('cp-stamp-btn').addEventListener('click', punch);
+    $('cp-open-config').addEventListener('click', openConfig);
+    $('cp-logout-btn').addEventListener('click', signOut);
+    $('cp-history-toggle').addEventListener('click', () => {
+      const body = $('cp-history-body');
+      const open = body.style.display!=='none';
+      body.style.display = open?'none':'block';
+      $('cp-history-arrow').textContent = open?'mostrar ▾':'ocultar ▴';
+    });
+  }
+
+  // ── init ────────────────────────────────────────────────────
+  async function startApp(user) {
+    currentUser = user;
+    showApp();
+    await loadConfig();
+    await loadRegistros();
+    bindEvents();
+    render();
+    setInterval(() => { renderClock(); renderSummary(); }, 1000);
+    setInterval(checkReminders, 30000);
+    checkReminders();
+    // checa imediatamente quando a aba volta ao foco
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkReminders();
+    });
+    if ('Notification' in window) {
+      if (Notification.permission==='granted') { notifOn=true; }
+      else if (Notification.permission!=='denied') {
+        Notification.requestPermission().then(p => { notifOn = p==='granted'; });
+      }
+    }
+  }
+
+  async function init() {
+    // botão de login
+    $('login-google-btn').addEventListener('click', signInWithGoogle);
+
+    // 1. tenta recuperar sessão do token na URL (após redirect do Google)
+    if (location.hash || location.search.includes('code=')) {
+      const { data, error } = await sb.auth.exchangeCodeForSession(location.href).catch(() => ({ data: null }));
+      if (data?.session?.user) {
+        // limpa a URL sem recarregar
+        history.replaceState(null, '', location.pathname);
+        await startApp(data.session.user);
+        return;
+      }
+    }
+
+    // 2. tenta sessão salva no localStorage
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await startApp(session.user);
+      return;
+    }
+
+    // 3. sem sessão — mostra login
+    showLogin();
+
+    // 4. escuta mudanças futuras (ex: após redirect OAuth)
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+        history.replaceState(null, '', location.pathname);
+        await startApp(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        showLogin();
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        currentUser = session.user;
+      }
+    });
+  }
+
+  init();
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(r => console.log('SW registrado:', r.scope))
+        .catch(e => console.error('SW erro:', e));
+    });
+  }
+</script>
+</body>
+</html>
