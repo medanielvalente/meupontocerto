@@ -1017,8 +1017,12 @@
     setInterval(checkReminders, 30000);
     checkReminders();
     // checa imediatamente quando a aba volta ao foco
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkReminders();
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        await loadRegistros();
+        render();
+        checkReminders();
+      }
     });
     if ('Notification' in window) {
       if (Notification.permission==='granted') { notifOn=true; }
