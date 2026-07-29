@@ -1016,13 +1016,40 @@
     setInterval(() => { renderClock(); renderSummary(); }, 1000);
     setInterval(checkReminders, 30000);
     checkReminders();
-    // checa imediatamente quando a aba volta ao foco
-    document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') {
+
+    // ── refresh robusto ao reabrir o app ─────────────────────
+    // o iOS PWA não dispara visibilitychange de forma confiável,
+    // então usamos três eventos combinados + timestamp
+    let lastRefresh = Date.now();
+    const REFRESH_INTERVAL = 30 * 1000; // recarrega se ficou 30s+ fora
+
+    async function refreshIfNeeded() {
+      const agora = Date.now();
+      if (agora - lastRefresh > REFRESH_INTERVAL) {
+        lastRefresh = agora;
         await loadRegistros();
         render();
         checkReminders();
       }
+    }
+
+    // visibilitychange — funciona em desktop e alguns mobile
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') await refreshIfNeeded();
+    });
+
+    // pageshow — dispara no iOS ao voltar pro app via multitarefa
+    window.addEventListener('pageshow', async (e) => {
+      // persisted = true quando vem do cache do browser (bfcache)
+      if (e.persisted || document.visibilityState === 'visible') {
+        lastRefresh = 0; // força refresh
+        await refreshIfNeeded();
+      }
+    });
+
+    // focus — fallback pra quando nenhum dos outros disparar
+    window.addEventListener('focus', async () => {
+      await refreshIfNeeded();
     });
     if ('Notification' in window) {
       if (Notification.permission==='granted') { notifOn=true; }
