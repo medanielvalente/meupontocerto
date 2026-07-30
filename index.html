@@ -1072,12 +1072,45 @@
     $('cp-loading').style.display = 'none';
   }
 
+  async function verificarDadosDoDia() {
+    const key = todayKey();
+    const dadosLocais = registros[key];
+
+    // se já tem dados locais com entrada preenchida, está ok
+    if (dadosLocais && dadosLocais.entrada) return;
+
+    // busca diretamente do Supabase só o registro de hoje
+    try {
+      const { data, error } = await sb.from('registros')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('data', key)
+        .single();
+
+      if (error || !data) return; // sem registro hoje, tudo certo
+
+      // tem dados no Supabase que não estavam no cache local — atualiza
+      registros[key] = {
+        entrada:       data.entrada        || '',
+        saidaAlmoco:   data.saida_almoco   || '',
+        retornoAlmoco: data.retorno_almoco || '',
+        saidaFinal:    data.saida_final    || '',
+        saidaExtra:    data.saida_extra    || '',
+        retornoExtra:  data.retorno_extra  || '',
+        manual:        data.manual ? { _any: true } : {}
+      };
+    } catch(e) {
+      console.error('Erro ao verificar dados do dia:', e);
+    }
+  }
+
   async function startApp(user) {
     currentUser = user;
     showLoading();
     renderSaudacao(user);
     await loadConfig();
     await loadRegistros();
+    await verificarDadosDoDia(); // garante que os dados do dia estão atualizados
     hideLoading();
     showApp();
     bindEvents();
@@ -1097,6 +1130,7 @@
       if (agora - lastRefresh > REFRESH_INTERVAL) {
         lastRefresh = agora;
         await loadRegistros();
+        await verificarDadosDoDia();
         render();
         checkReminders();
       }
