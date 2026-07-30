@@ -208,6 +208,8 @@
   .cp-history-table tr:hover td { background: var(--surface-alt); }
   .cp-saldo-good { color: var(--good); }
   .cp-saldo-bad { color: var(--bad); }
+  .cp-banco-zerar-btn { margin-top: 8px; background: none; border: 1px solid var(--border-strong); color: var(--ink-soft); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: 'Geist', sans-serif; transition: all .15s; display: block; }
+  .cp-banco-zerar-btn:hover { border-color: var(--bad); color: var(--bad); }
   .cp-edit-row-btn { background:none; border:none; color: var(--ink-soft); cursor:pointer; font-size:12px; }
   .cp-edit-row-btn:hover { color: var(--brand); }
   .cp-del-row-btn { background:none; border:none; color: var(--border-strong); cursor:pointer; font-size:13px; margin-left:4px; padding:0 2px; transition: color .15s; }
@@ -403,6 +405,7 @@
       <div class="cp-summary-label">Banco de horas (total)</div>
       <div class="cp-summary-value mono" id="cp-banco-total">--:--</div>
       <div class="cp-summary-note" id="cp-banco-note">acumulado dos dias fechados</div>
+      <button class="cp-banco-zerar-btn" id="cp-banco-zerar-btn" title="Zerar banco de horas">↺ Zerar</button>
     </div>
   </div>
 
@@ -465,7 +468,7 @@
   const DEFAULT_CONFIG = {
     entrada:'09:00', saidaAlmoco:'12:00', retornoAlmoco:'13:00',
     saidaFinal:'18:19', saidaExtra:'', retornoExtra:'',
-    lembreteAntecedencia:5, saldoInicialMinutos:0,
+    lembreteAntecedencia:5, saldoInicialMinutos:0, marcoZeroData: null,
     sheetsUrl:'', sheetsSpreadsheetUrl:''
   };
   let config = { ...DEFAULT_CONFIG };
@@ -542,6 +545,7 @@
         retornoExtra:         data.retorno_extra        || '',
         lembreteAntecedencia: data.lembrete_antecedencia ?? 5,
         saldoInicialMinutos:  data.saldo_inicial_minutos ?? 0,
+        marcoZeroData:        data.marco_zero_data || null,
         sheetsUrl:            '',
         sheetsSpreadsheetUrl: ''
       };
@@ -558,7 +562,8 @@
       saida_extra:           config.saidaExtra,
       retorno_extra:         config.retornoExtra,
       lembrete_antecedencia: config.lembreteAntecedencia,
-      saldo_inicial_minutos: config.saldoInicialMinutos
+      saldo_inicial_minutos: config.saldoInicialMinutos,
+      marco_zero_data:       config.marcoZeroData || null
     }, { onConflict: 'user_id' });
   }
 
@@ -669,7 +674,9 @@
   function calcBancoTotal() {
     const expected = expectedWorkedMinutes();
     let bancoRegistros = 0;
-    Object.values(registros).forEach(d => {
+    Object.entries(registros).forEach(([data, d]) => {
+      // ignora dias anteriores ao marco zero
+      if (config.marcoZeroData && data < config.marcoZeroData) return;
       const w = workedMinutesForDay(d);
       if (w !== null) bancoRegistros += (w - expected);
     });
@@ -748,9 +755,11 @@
     const bancoEl = $('cp-banco-total');
     bancoEl.textContent = minutesToHHMM(bancoTotal, true);
     bancoEl.className = 'cp-summary-value mono '+(bancoTotal>=0?'good':'bad');
-    $('cp-banco-note').textContent = saldoInicial!==0
-      ? `registros ${minutesToHHMM(bancoRegistros,true)} · saldo inicial ${minutesToHHMM(saldoInicial,true)}`
-      : 'acumulado dos dias registrados';
+    $('cp-banco-note').textContent = config.marcoZeroData
+      ? `a partir de ${formatDate(config.marcoZeroData)}`
+      : saldoInicial !== 0
+        ? `registros ${minutesToHHMM(bancoRegistros,true)} · saldo inicial ${minutesToHHMM(saldoInicial,true)}`
+        : 'acumulado dos dias registrados';
 
     // previsão de saída com almoço real
     const saidaPrevistaEl = $('cp-saida-prevista');
@@ -908,6 +917,34 @@
     };
   }
 
+  function confirmZerarBanco() {
+    const overlay = document.createElement('div');
+    overlay.className = 'cp-modal-overlay';
+    const hoje = todayKey();
+    overlay.innerHTML = `
+      <div class="cp-modal">
+        <h3>Zerar banco de horas</h3>
+        <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6;">
+          O histórico anterior será mantido, mas o banco de horas passará a ser calculado
+          a partir de <strong>hoje (${formatDate(hoje)})</strong>.<br><br>
+          Use quando tirar folga compensatória ou quando as horas forem pagas.
+        </p>
+        <div class="cp-modal-actions">
+          <button type="button" class="cp-btn-ghost" id="cp-zerar-cancel">Cancelar</button>
+          <button type="button" class="cp-btn-danger" id="cp-zerar-confirm">Zerar agora</button>
+        </div>
+      </div>`;
+    mountOverlay(overlay);
+    overlay.querySelector('#cp-zerar-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#cp-zerar-confirm').onclick = async () => {
+      config.marcoZeroData = hoje;
+      config.saldoInicialMinutos = 0;
+      await saveConfig();
+      overlay.remove();
+      render();
+    };
+  }
+
   function confirmDeleteDay(key) {
     const overlay = document.createElement('div');
     overlay.className = 'cp-modal-overlay';
@@ -1045,6 +1082,7 @@
     $('cp-stamp-btn').addEventListener('click', punch);
     $('cp-open-config').addEventListener('click', openConfig);
     $('cp-logout-btn').addEventListener('click', signOut);
+    $('cp-banco-zerar-btn').addEventListener('click', confirmZerarBanco);
     $('cp-history-toggle').addEventListener('click', () => {
       const body = $('cp-history-body');
       const open = body.style.display!=='none';
