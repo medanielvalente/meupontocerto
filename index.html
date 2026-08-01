@@ -157,10 +157,6 @@
   .cp-slots { display: flex; flex-direction: column; gap: 10px; }
   .cp-slots-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .cp-slots-row-extra { grid-template-columns: repeat(2, 1fr); }
-  .cp-slots-divider { display: flex; align-items: center; gap: 10px; margin: 2px 0; }
-  .cp-slots-divider::before, .cp-slots-divider::after { content:''; flex:1; height:1px; background: var(--border); }
-  .cp-slots-divider span { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
-  .cp-slots-divider small { opacity: 0.6; }
   .cp-slot-extra { background: var(--grey-1); }
   .cp-slot { background: var(--surface-alt); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 8px; text-align: center; position: relative; min-height: 84px; display:flex; flex-direction:column; justify-content:center; transition: all .2s; cursor: pointer; }
   .cp-slot:hover { background: var(--white); border-color: var(--brand); }
@@ -187,7 +183,15 @@
   /* summary */
   .cp-summary-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 20px; }
   .cp-summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .cp-summary-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .cp-summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; }
+  .cp-banco-zerar-btn { background: none; border: 1px solid var(--border-strong); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-family: 'Geist', sans-serif; transition: all .15s; white-space: nowrap; }
+  .cp-banco-zerar-btn:hover { border-color: var(--bad); color: var(--bad); }
+  .cp-slots-divider { display: flex; align-items: center; gap: 10px; margin: 2px 0; cursor: pointer; }
+  .cp-slots-divider::before, .cp-slots-divider::after { content:''; flex:1; height:1px; background: var(--border); }
+  .cp-slots-divider span { font-size: 11px; color: var(--brand); white-space: nowrap; font-weight: 500; }
+  .cp-slots-row-extra { display: none; }
+  .cp-slots-row-extra.visible { display: grid; }
   .cp-summary-value { font-size: 22px; font-weight: 600; font-family:'Geist Mono'; color: var(--brand-deep); }
   .cp-summary-value.good { color: var(--good); }
   .cp-summary-value.bad { color: var(--bad); }
@@ -208,8 +212,6 @@
   .cp-history-table tr:hover td { background: var(--surface-alt); }
   .cp-saldo-good { color: var(--good); }
   .cp-saldo-bad { color: var(--bad); }
-  .cp-banco-zerar-btn { margin-top: 8px; background: none; border: 1px solid var(--border-strong); color: var(--ink-soft); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: 'Geist', sans-serif; transition: all .15s; display: block; }
-  .cp-banco-zerar-btn:hover { border-color: var(--bad); color: var(--bad); }
   .cp-edit-row-btn { background:none; border:none; color: var(--ink-soft); cursor:pointer; font-size:12px; }
   .cp-edit-row-btn:hover { color: var(--brand); }
   .cp-del-row-btn { background:none; border:none; color: var(--border-strong); cursor:pointer; font-size:13px; margin-left:4px; padding:0 2px; transition: color .15s; }
@@ -402,10 +404,12 @@
       <div class="cp-summary-note" id="cp-saida-prevista-note">aguardando entrada</div>
     </div>
     <div class="cp-summary-box">
-      <div class="cp-summary-label">Banco de horas (total)</div>
+      <div class="cp-summary-box-header">
+        <div class="cp-summary-label">Banco de horas</div>
+        <button class="cp-banco-zerar-btn" id="cp-banco-zerar-btn" title="Zerar banco de horas">↺ Zerar</button>
+      </div>
       <div class="cp-summary-value mono" id="cp-banco-total">--:--</div>
       <div class="cp-summary-note" id="cp-banco-note">acumulado dos dias fechados</div>
-      <button class="cp-banco-zerar-btn" id="cp-banco-zerar-btn" title="Zerar banco de horas">↺ Zerar</button>
     </div>
   </div>
 
@@ -705,8 +709,17 @@
     wrap.innerHTML = '';
     const row1 = document.createElement('div'); row1.className = 'cp-slots-row';
     const divider = document.createElement('div'); divider.className = 'cp-slots-divider';
-    divider.innerHTML = '<span>Ausência temporária <small>(opcional)</small></span>';
     const row2 = document.createElement('div'); row2.className = 'cp-slots-row cp-slots-row-extra';
+
+    // abre automaticamente se já tem dados extras no dia
+    const temExtra = !!(day.saidaExtra || day.retornoExtra);
+    if (temExtra) row2.classList.add('visible');
+
+    divider.innerHTML = `<span>${temExtra ? '▾ Ausência temporária' : '+ Ausência temporária'}</span>`;
+    divider.addEventListener('click', () => {
+      const aberto = row2.classList.toggle('visible');
+      divider.querySelector('span').textContent = aberto ? '▾ Ausência temporária' : '+ Ausência temporária';
+    });
     SLOT_DEFS.forEach(s => {
       const filled = !!day[s.key];
       const el = document.createElement('div');
