@@ -246,15 +246,16 @@
   @media (max-width: 600px) {
     #cp-root { border-radius: 0; padding-bottom: 60px; }
 
-    /* topbar: empilha logo+texto em cima, relógio embaixo */
-    .cp-topbar { flex-direction: column; gap: 14px; padding: 16px 14px; border-radius: 0; }
-    .cp-brandmark { gap: 10px; }
-    .cp-brandmark svg { width: 80px; }
-    .cp-title { font-size: 20px; }
-    .cp-sub { font-size: 11.5px; }
-    .cp-clock { text-align: left; }
-    .cp-clock-time { font-size: 32px; }
-    .cp-clock-date { font-size: 12px; }
+    /* topbar mobile: nome à esquerda, relógio+botões à direita */
+    .cp-topbar { flex-direction: row; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 0; flex-wrap: nowrap; }
+    .cp-brandmark { flex: 1; min-width: 0; gap: 8px; }
+    .cp-title { font-size: 16px; }
+    .cp-saudacao { font-size: 11px; }
+    .cp-clock { text-align: right; flex-shrink: 0; }
+    .cp-clock-time { font-size: 17px; letter-spacing: 0; }
+    .cp-clock-date { font-size: 10px; }
+    .cp-clock-seconds { display: none; }
+    .cp-gear { padding: 6px 8px; font-size: 14px; }
 
     /* body */
     .cp-body { padding: 14px 12px 0; }
@@ -697,7 +698,10 @@
 
   function renderClock() {
     const d = new Date();
-    $('cp-clock-time').textContent = d.toLocaleTimeString('pt-BR');
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    const s = String(d.getSeconds()).padStart(2,'0');
+    $('cp-clock-time').innerHTML = `${h}:${m}<span class="cp-clock-seconds">:${s}</span>`;
     $('cp-clock-date').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'short' });
   }
 
