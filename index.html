@@ -568,14 +568,23 @@
         retornoExtra:         data.retorno_extra        || '',
         lembreteAntecedencia: data.lembrete_antecedencia ?? 5,
         saldoInicialMinutos:  data.saldo_inicial_minutos ?? 0,
-        marcoZeroData:        data.marco_zero_data || null,
         sheetsUrl:            '',
-        sheetsSpreadsheetUrl: ''
+        sheetsSpreadsheetUrl: '',
+        // Supabase primeiro, fallback localStorage (garante persistência mesmo sem a coluna)
+        marcoZeroData: data.marco_zero_data
+          || localStorage.getItem('mpc_marco_zero_' + currentUser.id)
+          || null
       };
     }
   }
 
   async function saveConfig() {
+    // persiste marco zero no localStorage como redundância
+    if (config.marcoZeroData) {
+      localStorage.setItem('mpc_marco_zero_' + currentUser.id, config.marcoZeroData);
+    } else {
+      localStorage.removeItem('mpc_marco_zero_' + currentUser.id);
+    }
     await sb.from('configuracoes').upsert({
       user_id:               currentUser.id,
       entrada:               config.entrada,
