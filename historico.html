@@ -65,8 +65,12 @@
     .h-table-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); }
     .h-table-title { font-size: 14px; font-weight: 600; color: var(--brand-deep); }
     .h-table-count { font-size: 12px; color: var(--ink-soft); }
-    .h-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    .h-table-wrap { width: 100%; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    table th:nth-child(1), table td:nth-child(1) { width: 18%; }
+    table th:nth-child(2), table td:nth-child(2) { width: 28%; }
+    table th:nth-child(3), table td:nth-child(3) { width: 28%; }
+    table th:nth-child(4), table td:nth-child(4) { width: 26%; text-align: right; }
     thead th { text-align: left; color: var(--white); background: var(--brand-deep); font-weight: 500; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; padding: 9px 10px; }
     /* ── tabela enxuta ── */
     tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-family: 'Geist Mono'; font-size: 13px; }
