@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#5B4CF5">
+  <title>Histórico · Meu Ponto Certo</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:      #5B4CF5;
+      --brand-mid:  #4A3DD4;
+      --brand-deep: #2D1F8E;
+      --white:      #ffffff;
+      --grey-1:     #fafafa;
+      --grey-2:     #f5f5f7;
+      --grey-3:     #e8e8ee;
+      --grey-4:     #d7d7da;
+      --ink:        #000000;
+      --ink-soft:   #52596e;
+      --good:       #146c43;
+      --bad:        #b3261e;
+      --surface:    #ffffff;
+      --border:     #e8e8ee;
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--grey-1); color: var(--ink); min-height: 100vh; padding-bottom: 80px; }
+
+    /* ── topbar ── */
+    .h-topbar { background: var(--brand); padding: 14px 18px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .h-back-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: var(--white); border-radius: 8px; padding: 7px 12px; font-size: 14px; cursor: pointer; font-family: 'Geist'; font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: background .15s; -webkit-tap-highlight-color: transparent; }
+    .h-back-btn:hover { background: rgba(255,255,255,0.22); }
+    .h-topbar-title { color: var(--white); font-size: 18px; font-weight: 700; flex: 1; }
+    .h-pdf-btn { background: var(--white); color: var(--brand); border: none; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Geist'; display: flex; align-items: center; gap: 6px; transition: opacity .15s; white-space: nowrap; }
+    .h-pdf-btn:hover { opacity: 0.88; }
+    .h-pdf-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── body ── */
+    .h-body { max-width: 780px; margin: 0 auto; padding: 20px 16px; }
+
+    /* ── seletor de período ── */
+    .h-period-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+    .h-period-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 10px; font-weight: 500; }
+    .h-period-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .h-period-tab { background: var(--grey-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Geist'; transition: all .15s; white-space: nowrap; }
+    .h-period-tab.active { background: var(--brand); border-color: var(--brand); color: var(--white); }
+    .h-period-custom { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+    .h-period-custom input[type=date] { background: var(--grey-2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: 'Geist'; font-size: 13px; color: var(--brand-deep); }
+    .h-period-custom span { font-size: 13px; color: var(--ink-soft); }
+    .h-period-custom button { background: var(--brand); color: var(--white); border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Geist'; }
+
+    /* ── resumo do período ── */
+    .h-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .h-summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .h-summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; }
+    .h-summary-value { font-size: 22px; font-weight: 600; font-family: 'Geist Mono'; color: var(--brand-deep); }
+    .h-summary-value.good { color: var(--good); }
+    .h-summary-value.bad { color: var(--bad); }
+
+    /* ── tabela ── */
+    .h-table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .h-table-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    .h-table-title { font-size: 14px; font-weight: 600; color: var(--brand-deep); }
+    .h-table-count { font-size: 12px; color: var(--ink-soft); }
+    .h-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    thead th { text-align: left; color: var(--white); background: var(--brand-deep); font-weight: 500; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; padding: 9px 10px; }
+    tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-family: 'Geist Mono'; font-size: 13px; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--grey-1); }
+    .td-data { font-family: 'Geist'; font-weight: 500; color: var(--ink-soft); font-size: 12px; }
+    .td-good { color: var(--good); font-weight: 600; }
+    .td-bad { color: var(--bad); font-weight: 600; }
+    .td-actions { white-space: nowrap; }
+    .btn-edit { background: none; border: none; color: var(--ink-soft); cursor: pointer; font-size: 12px; font-family: 'Geist'; padding: 2px 6px; }
+    .btn-edit:hover { color: var(--brand); }
+    .btn-del { background: none; border: none; color: var(--grey-4); cursor: pointer; font-size: 13px; padding: 2px 4px; }
+    .btn-del:hover { color: var(--bad); }
+
+    /* ── empty ── */
+    .h-empty { text-align: center; padding: 48px 20px; color: var(--ink-soft); }
+    .h-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .h-empty p { font-size: 14px; }
+
+    /* ── loading ── */
+    .h-loading { text-align: center; padding: 40px; color: var(--ink-soft); font-size: 14px; }
+
+    /* ── bottom nav ── */
+    .h-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--border); display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
+    .h-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: var(--ink-soft); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; }
+    .h-bottom-nav a.active { color: var(--brand); }
+    .h-bottom-nav a svg { width: 22px; height: 22px; stroke-width: 1.8; }
+
+    /* ── modal ── */
+    .h-modal-overlay { position: fixed; inset: 0; background: rgba(45,31,142,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; }
+    .h-modal { background: var(--surface); border-radius: 16px 16px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.15); }
+    .h-modal h3 { font-size: 16px; color: var(--brand-deep); margin-bottom: 16px; }
+    .h-field { margin-bottom: 12px; }
+    .h-field label { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .h-field input[type=time] { width: 100%; background: var(--grey-2); border: 1px solid var(--grey-3); border-radius: 6px; color: var(--brand-deep); padding: 10px 12px; font-family: 'Geist Mono'; font-size: 16px; }
+    .h-modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+    .h-btn-primary { background: var(--brand); color: var(--white); border: none; border-radius: 7px; padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 14px; font-family: 'Geist'; }
+    .h-btn-ghost { background: none; border: 1px solid var(--grey-3); color: var(--ink-soft); border-radius: 7px; padding: 10px 18px; cursor: pointer; font-size: 14px; font-family: 'Geist'; }
+    .h-btn-danger { background: var(--bad); color: var(--white); border: none; border-radius: 7px; padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 14px; font-family: 'Geist'; }
+
+    /* ── mobile ── */
+    @media (max-width: 600px) {
+      .h-summary { grid-template-columns: 1fr 1fr; }
+      .h-summary-box:last-child { grid-column: 1 / -1; }
+      .h-summary-value { font-size: 20px; }
+      .h-topbar-title { font-size: 16px; }
+      .h-pdf-btn span { display: none; }
+    }
+
+    /* ── print / PDF ── */
+    @media print {
+      .h-topbar, .h-period-card, .h-bottom-nav, .td-actions, thead th:last-child { display: none !important; }
+      body { background: white; padding: 0; }
+      .h-body { padding: 0; max-width: 100%; }
+      .h-table-card { border: none; box-shadow: none; border-radius: 0; }
+      .h-summary { page-break-inside: avoid; }
+      .h-print-header { display: block !important; }
+    }
+    .h-print-header { display: none; padding: 20px 0 16px; }
+    .h-print-header h2 { font-size: 18px; font-weight: 700; color: var(--brand-deep); }
+    .h-print-header p { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="h-topbar">
+  <a href="./index.html" class="h-back-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Voltar
+  </a>
+  <div class="h-topbar-title">Histórico</div>
+  <button class="h-pdf-btn" id="h-pdf-btn" disabled>
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    <span>Exportar PDF</span>
+  </button>
+</div>
+
+<div class="h-body">
+
+  <!-- header de impressão -->
+  <div class="h-print-header" id="h-print-header">
+    <h2>Meu Ponto Certo — Histórico de Ponto</h2>
+    <p id="h-print-period"></p>
+  </div>
+
+  <!-- seletor de período -->
+  <div class="h-period-card">
+    <div class="h-period-label">Período</div>
+    <div class="h-period-tabs">
+      <button class="h-period-tab active" data-period="quinzena">Quinzena atual</button>
+      <button class="h-period-tab" data-period="mes">Mês atual</button>
+      <button class="h-period-tab" data-period="mes-anterior">Mês anterior</button>
+      <button class="h-period-tab" data-period="custom">Personalizado</button>
+    </div>
+    <div class="h-period-custom" id="h-period-custom" style="display:none;">
+      <input type="date" id="h-date-from">
+      <span>até</span>
+      <input type="date" id="h-date-to">
+      <button id="h-apply-custom">Aplicar</button>
+    </div>
+  </div>
+
+  <!-- resumo -->
+  <div class="h-summary" id="h-summary">
+    <div class="h-summary-box">
+      <div class="h-summary-label">Dias registrados</div>
+      <div class="h-summary-value" id="h-total-dias">—</div>
+    </div>
+    <div class="h-summary-box">
+      <div class="h-summary-label">Total trabalhado</div>
+      <div class="h-summary-value" id="h-total-trabalhado">—</div>
+    </div>
+    <div class="h-summary-box">
+      <div class="h-summary-label">Saldo do período</div>
+      <div class="h-summary-value" id="h-saldo-periodo">—</div>
+    </div>
+  </div>
+
+  <!-- tabela -->
+  <div class="h-table-card">
+    <div class="h-table-head">
+      <div class="h-table-title" id="h-table-title">Registros</div>
+      <div class="h-table-count" id="h-table-count"></div>
+    </div>
+    <div id="h-table-body">
+      <div class="h-loading">Carregando...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- bottom nav -->
+<nav class="h-bottom-nav">
+  <a href="./index.html">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
+      <polyline points="12 7 12 12 15 14" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    Hoje
+  </a>
+  <a href="./historico.html" class="active">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <rect x="3" y="4" width="18" height="17" rx="2" stroke-width="1.8"/>
+      <line x1="3" y1="9" x2="21" y2="9" stroke-width="1.8"/>
+      <line x1="8" y1="2" x2="8" y2="6" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="16" y1="2" x2="16" y2="6" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="7" y1="14" x2="12" y2="14" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="7" y1="18" x2="15" y2="18" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    Histórico
+  </a>
+</nav>
+
+<script>
+(function(){
+  const SUPA_URL = 'https://mbywtlbhzficeafdgtug.supabase.co';
+  const SUPA_KEY = 'sb_publishable_u9M1VQ4Q9G7pQpXjCmDrbQ_u-Cwj5OO';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+    auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage }
+  });
+
+  let currentUser = null;
+  let registros = [];
+  let config = { entrada:'09:00', saidaAlmoco:'12:00', retornoAlmoco:'13:00', saidaFinal:'18:19', saldoInicialMinutos: 0 };
+  let periodoAtual = 'quinzena';
+  let dateFrom = null, dateTo = null;
+
+  const $ = id => document.getElementById(id);
+
+  // ── utils ─────────────────────────────────────────────────────
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function toMinutes(hhmm) {
+    if (!hhmm) return null;
+    const [h,m] = hhmm.split(':').map(Number);
+    return h*60+m;
+  }
+  function minutesToHHMM(total, signed) {
+    const sign = total < 0 ? '-' : (signed ? '+' : '');
+    const abs = Math.abs(total);
+    return sign + String(Math.floor(abs/60)).padStart(2,'0') + ':' + String(abs%60).padStart(2,'0');
+  }
+  function formatDate(key) {
+    const [y,m,d] = key.split('-');
+    return `${d}-${m}-${y.slice(2)}`;
+  }
+  function formatDateLong(key) {
+    const d = new Date(key+'T12:00:00');
+    return d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short' });
+  }
+  function expectedWorked() {
+    return (toMinutes(config.saidaFinal) - toMinutes(config.entrada))
+         - (toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco));
+  }
+  function calcWorked(r) {
+    if (!r.entrada || !r.saida_almoco || !r.retorno_almoco || !r.saida_final) return null;
+    let t = (toMinutes(r.saida_almoco) - toMinutes(r.entrada))
+           + (toMinutes(r.saida_final) - toMinutes(r.retorno_almoco));
+    if (r.saida_extra && r.retorno_extra) t -= (toMinutes(r.retorno_extra) - toMinutes(r.saida_extra));
+    return t;
+  }
+
+  // ── período ───────────────────────────────────────────────────
+  function getPeriodo(tipo) {
+    const hoje = new Date();
+    const y = hoje.getFullYear(), m = hoje.getMonth();
+    if (tipo === 'quinzena') {
+      const d = hoje.getDate();
+      if (d <= 15) return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-15` };
+      const ultimo = new Date(y, m+1, 0).getDate();
+      return { from: `${y}-${String(m+1).padStart(2,'0')}-16`, to: `${y}-${String(m+1).padStart(2,'0')}-${ultimo}` };
+    }
+    if (tipo === 'mes') {
+      const ultimo = new Date(y, m+1, 0).getDate();
+      return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-${ultimo}` };
+    }
+    if (tipo === 'mes-anterior') {
+      const mAnt = m === 0 ? 12 : m, yAnt = m === 0 ? y-1 : y;
+      const ultimo = new Date(yAnt, mAnt, 0).getDate();
+      return { from: `${yAnt}-${String(mAnt).padStart(2,'0')}-01`, to: `${yAnt}-${String(mAnt).padStart(2,'0')}-${ultimo}` };
+    }
+    return { from: dateFrom, to: dateTo };
+  }
+
+  function periodoLabel(from, to) {
+    return `${formatDate(from)} a ${formatDate(to)}`;
+  }
+
+  // ── supabase ──────────────────────────────────────────────────
+  async function loadConfig() {
+    const { data } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
+    if (data) {
+      config.entrada = data.entrada || '09:00';
+      config.saidaAlmoco = data.saida_almoco || '12:00';
+      config.retornoAlmoco = data.retorno_almoco || '13:00';
+      config.saidaFinal = data.saida_final || '18:19';
+      config.saldoInicialMinutos = data.saldo_inicial_minutos || 0;
+    }
+  }
+
+  async function loadRegistros(from, to) {
+    $('h-table-body').innerHTML = '<div class="h-loading">Carregando...</div>';
+    $('h-pdf-btn').disabled = true;
+    const { data, error } = await sb.from('registros')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .gte('data', from)
+      .lte('data', to)
+      .order('data', { ascending: false });
+    if (error || !data) { registros = []; }
+    else { registros = data; }
+    renderTabela(from, to);
+  }
+
+  async function saveRegistro(r) {
+    const worked = calcWorked(r);
+    const expected = expectedWorked();
+    const saldo = worked !== null ? worked - expected : null;
+    await sb.from('registros').upsert({
+      user_id: currentUser.id,
+      data: r.data,
+      entrada: r.entrada || null,
+      saida_almoco: r.saida_almoco || null,
+      retorno_almoco: r.retorno_almoco || null,
+      saida_final: r.saida_final || null,
+      saida_extra: r.saida_extra || null,
+      retorno_extra: r.retorno_extra || null,
+      trabalhado: worked !== null ? minutesToHHMM(worked) : null,
+      meta: minutesToHHMM(expected),
+      saldo: saldo !== null ? minutesToHHMM(saldo, true) : null,
+      manual: true
+    }, { onConflict: 'user_id,data' });
+  }
+
+  async function deleteRegistro(data_key) {
+    await sb.from('registros').delete().eq('user_id', currentUser.id).eq('data', data_key);
+    const { from, to } = getPeriodo(periodoAtual);
+    await loadRegistros(from, to);
+  }
+
+  // ── render ────────────────────────────────────────────────────
+  function renderTabela(from, to) {
+    const expected = expectedWorked();
+    let totalTrab = 0, totalSaldo = 0, dias = 0;
+
+    if (registros.length === 0) {
+      $('h-table-body').innerHTML = `
+        <div class="h-empty">
+          <div class="h-empty-icon">📋</div>
+          <p>Nenhum registro neste período.</p>
+        </div>`;
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'h-table-wrap';
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr>
+        <th>Data</th><th>Entrada</th><th>Saída alm.</th><th>Retorno</th>
+        <th>Saída ext.</th><th>Ret. ext.</th><th>Saída</th>
+        <th>Trab.</th><th>Saldo</th><th></th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+
+      registros.forEach(r => {
+        const worked = calcWorked(r);
+        const saldo = worked !== null ? worked - expected : null;
+        if (worked !== null) { totalTrab += worked; dias++; }
+        if (saldo !== null) totalSaldo += saldo;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="td-data">${formatDateLong(r.data)}</td>
+          <td>${r.entrada||'—'}</td>
+          <td>${r.saida_almoco||'—'}</td>
+          <td>${r.retorno_almoco||'—'}</td>
+          <td>${r.saida_extra||'—'}</td>
+          <td>${r.retorno_extra||'—'}</td>
+          <td>${r.saida_final||'—'}</td>
+          <td>${worked!==null?minutesToHHMM(worked):'—'}</td>
+          <td class="${saldo===null?'':(saldo>=0?'td-good':'td-bad')}">${saldo!==null?minutesToHHMM(saldo,true):'—'}</td>
+          <td class="td-actions">
+            <button class="btn-edit" data-key="${r.data}">editar</button>
+            <button class="btn-del" data-key="${r.data}" title="Excluir">🗑</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      $('h-table-body').innerHTML = '';
+      $('h-table-body').appendChild(wrap);
+
+      tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', e => openEditor(e.currentTarget.dataset.key)));
+      tbody.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', e => confirmDelete(e.currentTarget.dataset.key)));
+    }
+
+    // resumo
+    $('h-total-dias').textContent = dias;
+    $('h-total-trabalhado').textContent = totalTrab > 0 ? minutesToHHMM(totalTrab) : '—';
+    const saldoEl = $('h-saldo-periodo');
+    saldoEl.textContent = dias > 0 ? minutesToHHMM(totalSaldo, true) : '—';
+    saldoEl.className = 'h-summary-value' + (totalSaldo >= 0 ? ' good' : ' bad');
+
+    // header de impressão
+    $('h-table-title').textContent = `Registros`;
+    $('h-table-count').textContent = `${registros.length} dia${registros.length !== 1 ? 's' : ''}`;
+    $('h-print-period').textContent = `Período: ${periodoLabel(from, to)} · Gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+    $('h-pdf-btn').disabled = registros.length === 0;
+  }
+
+  // ── editor de dia ─────────────────────────────────────────────
+  function openEditor(dataKey) {
+    const r = registros.find(x => x.data === dataKey) || { data: dataKey };
+    const SLOTS = [
+      { key:'entrada', label:'Entrada', val: r.entrada },
+      { key:'saida_almoco', label:'Saída almoço', val: r.saida_almoco },
+      { key:'retorno_almoco', label:'Retorno almoço', val: r.retorno_almoco },
+      { key:'saida_final', label:'Saída', val: r.saida_final },
+      { key:'saida_extra', label:'Saída extra', val: r.saida_extra },
+      { key:'retorno_extra', label:'Retorno extra', val: r.retorno_extra },
+    ];
+    const overlay = document.createElement('div');
+    overlay.className = 'h-modal-overlay';
+    overlay.innerHTML = `
+      <div class="h-modal">
+        <h3>Editar · ${formatDate(dataKey)}</h3>
+        ${SLOTS.map(s=>`<div class="h-field"><label>${s.label}</label>
+          <input type="time" data-key="${s.key}" value="${s.val||''}"></div>`).join('')}
+        <div class="h-modal-actions">
+          <button type="button" class="h-btn-ghost" id="h-edit-cancel">Cancelar</button>
+          <button type="button" class="h-btn-primary" id="h-edit-save">Salvar</button>
+        </div>
+      </div>`;
+    const box = overlay.querySelector('.h-modal');
+    box.addEventListener('click', e => e.stopPropagation());
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+    overlay.querySelector('#h-edit-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#h-edit-save').onclick = async () => {
+      const updated = { ...r, data: dataKey };
+      overlay.querySelectorAll('input[type=time]').forEach(inp => { updated[inp.dataset.key] = inp.value || null; });
+      await saveRegistro(updated);
+      overlay.remove();
+      const { from, to } = getPeriodo(periodoAtual);
+      await loadRegistros(from, to);
+    };
+  }
+
+  function confirmDelete(dataKey) {
+    const overlay = document.createElement('div');
+    overlay.className = 'h-modal-overlay';
+    overlay.innerHTML = `
+      <div class="h-modal">
+        <h3>Excluir registro</h3>
+        <p style="font-size:14px;color:var(--ink-soft);margin:0 0 16px;line-height:1.6;">Tem certeza que deseja excluir o registro de <strong>${formatDate(dataKey)}</strong>?</p>
+        <div class="h-modal-actions">
+          <button type="button" class="h-btn-ghost" id="h-del-cancel">Cancelar</button>
+          <button type="button" class="h-btn-danger" id="h-del-confirm">Excluir</button>
+        </div>
+      </div>`;
+    const box = overlay.querySelector('.h-modal');
+    box.addEventListener('click', e => e.stopPropagation());
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+    overlay.querySelector('#h-del-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#h-del-confirm').onclick = async () => {
+      overlay.remove();
+      await deleteRegistro(dataKey);
+    };
+  }
+
+  // ── PDF ───────────────────────────────────────────────────────
+  function exportPDF() {
+    window.print();
+  }
+
+  // ── período tabs ──────────────────────────────────────────────
+  function setPeriodo(tipo, from, to) {
+    periodoAtual = tipo;
+    document.querySelectorAll('.h-period-tab').forEach(t => t.classList.toggle('active', t.dataset.period === tipo));
+    $('h-period-custom').style.display = tipo === 'custom' ? 'flex' : 'none';
+    const periodo = getPeriodo(tipo);
+    loadRegistros(periodo.from || from, periodo.to || to);
+  }
+
+  // ── init ──────────────────────────────────────────────────────
+  async function init() {
+    // verifica sessão
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) { location.href = './index.html'; return; }
+    currentUser = session.user;
+
+    await loadConfig();
+
+    // período inicial: quinzena
+    const periodo = getPeriodo('quinzena');
+    await loadRegistros(periodo.from, periodo.to);
+
+    // tabs
+    document.querySelectorAll('.h-period-tab').forEach(tab => {
+      tab.addEventListener('click', () => setPeriodo(tab.dataset.period));
+    });
+
+    // custom
+    const hoje = todayStr();
+    $('h-date-to').value = hoje;
+    $('h-date-from').value = hoje.slice(0,8) + '01';
+    $('h-apply-custom').addEventListener('click', () => {
+      dateFrom = $('h-date-from').value;
+      dateTo = $('h-date-to').value;
+      if (dateFrom && dateTo) setPeriodo('custom', dateFrom, dateTo);
+    });
+
+    // PDF
+    $('h-pdf-btn').addEventListener('click', exportPDF);
+
+    // refresh de sessão
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') location.href = './index.html';
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -301,6 +301,13 @@
     .cp-field input[type=url] { font-size: 16px; padding: 10px 12px; } /* 16px evita zoom no iOS */
     .cp-btn-primary, .cp-btn-ghost { padding: 12px 18px; font-size: 14px; }
   }
+
+  /* ── bottom nav ── */
+  .cp-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--border); display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
+  .cp-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: var(--ink-soft); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; }
+  .cp-bottom-nav a.active { color: var(--brand); }
+  .cp-bottom-nav a svg { width: 22px; height: 22px; stroke-width: 1.8; }
+  #cp-root { padding-bottom: 80px; }
 </style>
 
 <!-- ── OVERLAY DE CARREGAMENTO ────────────────────────────── -->
@@ -420,23 +427,31 @@
     <button class="cp-sheets-link-btn" id="cp-open-sheets" style="display:none">↗ Abrir planilha</button>
   </div>
 
-  <div class="cp-history">
-    <div class="cp-history-head" id="cp-history-toggle">
-      <h3 style="font-size:14px; color:var(--brand-deep);">Histórico</h3>
-      <span class="cp-history-toggle" id="cp-history-arrow">mostrar ▾</span>
-    </div>
-    <div id="cp-history-body" style="display:none;">
-      <div class="cp-history-table-wrap">
-      <table class="cp-history-table" id="cp-history-table">
-        <thead><tr><th>Data</th><th>Entrada</th><th>Saída alm.</th><th>Retorno</th><th>Saída extra</th><th>Retorno extra</th><th>Saída</th><th>Trab.</th><th>Saldo</th><th></th></tr></thead>
-        <tbody id="cp-history-tbody"></tbody>
-      </table>
-      </div>
-      <div class="cp-empty-hist" id="cp-empty-hist" style="display:none;">Nenhum dia registrado ainda.</div>
-    </div>
   </div>
   </div>
 </div>
+
+<!-- ── BOTTOM NAV ─────────────────────────────────────────── -->
+<nav class="cp-bottom-nav">
+  <a href="./index.html" class="active">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
+      <polyline points="12 7 12 12 15 14" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    Hoje
+  </a>
+  <a href="./historico.html">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <rect x="3" y="4" width="18" height="17" rx="2" stroke-width="1.8"/>
+      <line x1="3" y1="9" x2="21" y2="9" stroke-width="1.8"/>
+      <line x1="8" y1="2" x2="8" y2="6" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="16" y1="2" x2="16" y2="6" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="7" y1="14" x2="12" y2="14" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="7" y1="18" x2="15" y2="18" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    Histórico
+  </a>
+</nav>
 
 <script>
 (function(){
@@ -695,7 +710,7 @@
     const el = $('cp-sync-status');
     if (el) el.textContent = text;
   }
-  function render() { renderClock(); renderSlots(); renderSummary(); renderHistory(); }
+  function render() { renderClock(); renderSlots(); renderSummary(); }
 
   function renderClock() {
     const d = new Date();
@@ -815,34 +830,6 @@
     // converte YYYY-MM-DD → DD-MM-AA
     const [y, m, d] = key.split('-');
     return `${d}-${m}-${y.slice(2)}`;
-  }
-
-  function renderHistory() {
-    const tbody = $('cp-history-tbody');
-    tbody.innerHTML = '';
-    const dates = Object.keys(registros).sort().reverse().slice(0, 7);
-    $('cp-empty-hist').style.display = dates.length ? 'none' : 'block';
-    const expected = expectedWorkedMinutes();
-    dates.forEach(key => {
-      const d = registros[key];
-      const worked = workedMinutesForDay(d);
-      const saldo = worked !== null ? worked - expected : null;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${formatDate(key)}</td>
-        <td>${d.entrada||'—'}</td><td>${d.saidaAlmoco||'—'}</td>
-        <td>${d.retornoAlmoco||'—'}</td><td>${d.saidaExtra||'—'}</td>
-        <td>${d.retornoExtra||'—'}</td><td>${d.saidaFinal||'—'}</td>
-        <td>${worked!==null?minutesToHHMM(worked):'—'}</td>
-        <td class="${saldo===null?'':(saldo>=0?'cp-saldo-good':'cp-saldo-bad')}">${saldo!==null?minutesToHHMM(saldo,true):'—'}</td>
-        <td>
-          <button class="cp-edit-row-btn" data-key="${key}">editar</button>
-          <button class="cp-del-row-btn" data-key="${key}" title="Excluir">🗑</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('.cp-edit-row-btn').forEach(btn => btn.addEventListener('click', e => openDayEditor(e.currentTarget.dataset.key)));
-    tbody.querySelectorAll('.cp-del-row-btn').forEach(btn => btn.addEventListener('click', e => confirmDeleteDay(e.currentTarget.dataset.key)));
   }
 
   // ── ações ───────────────────────────────────────────────────
@@ -1101,12 +1088,6 @@
     $('cp-open-config').addEventListener('click', openConfig);
     $('cp-logout-btn').addEventListener('click', signOut);
     $('cp-banco-zerar-btn').addEventListener('click', confirmZerarBanco);
-    $('cp-history-toggle').addEventListener('click', () => {
-      const body = $('cp-history-body');
-      const open = body.style.display!=='none';
-      body.style.display = open?'none':'block';
-      $('cp-history-arrow').textContent = open?'mostrar ▾':'ocultar ▴';
-    });
   }
 
   // ── init ────────────────────────────────────────────────────
