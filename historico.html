@@ -90,7 +90,7 @@
 
     /* ── bottom nav ── */
     .h-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--border); display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
-    .h-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: var(--ink-soft); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; }
+    .h-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: var(--ink-soft); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; font-family: 'Geist', sans-serif; }
     .h-bottom-nav a.active { color: var(--brand); }
     .h-bottom-nav a svg { width: 22px; height: 22px; stroke-width: 1.8; }
 
@@ -155,10 +155,9 @@
   <div class="h-period-card">
     <div class="h-period-label">Período</div>
     <div class="h-period-tabs">
-      <button class="h-period-tab active" data-period="quinzena">Quinzena atual</button>
-      <button class="h-period-tab" data-period="mes">Mês atual</button>
-      <button class="h-period-tab" data-period="mes-anterior">Mês anterior</button>
-      <button class="h-period-tab" data-period="custom">Personalizado</button>
+      <button class="h-period-tab active" data-period="quinzena">Quinzenal</button>
+      <button class="h-period-tab" data-period="mes">Mensal</button>
+      <button class="h-period-tab" data-period="custom">Período</button>
     </div>
     <div class="h-period-custom" id="h-period-custom" style="display:none;">
       <input type="date" id="h-date-from">
