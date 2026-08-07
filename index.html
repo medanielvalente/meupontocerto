@@ -14,6 +14,17 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Meu Ponto Certo</title>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "53620e17-48e1-4f35-a5bc-ff378e894de3",
+        serviceWorkerParam: { scope: "/" },
+        serviceWorkerPath: "OneSignalSDKWorker.js",
+      });
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="margin:0;padding:0;background:#5B4CF5;font-family:'Geist',sans-serif;">
@@ -1169,6 +1180,29 @@
     }
   }
 
+  async function setupOneSignal(user) {
+    try {
+      if (!window.OneSignal) return;
+      // identifica o usuário pelo ID do Supabase
+      await OneSignal.login(user.id);
+      // aguarda o subscription ficar ativo
+      const permission = await OneSignal.Notifications.permission;
+      if (!permission) {
+        await OneSignal.Notifications.requestPermission();
+      }
+      // salva o subscription_id no Supabase para uso no cron
+      const subId = await OneSignal.User.PushSubscription.id;
+      if (subId) {
+        await sb.from('configuracoes').upsert({
+          user_id: user.id,
+          onesignal_subscription_id: subId
+        }, { onConflict: 'user_id' });
+      }
+    } catch(e) {
+      console.log('OneSignal setup:', e);
+    }
+  }
+
   async function startApp(user) {
     currentUser = user;
     showLoading();
@@ -1180,6 +1214,7 @@
     showApp();
     bindEvents();
     render();
+    setupOneSignal(user);
     setInterval(() => { renderClock(); renderSummary(); }, 1000);
     setInterval(checkReminders, 30000);
     checkReminders();
