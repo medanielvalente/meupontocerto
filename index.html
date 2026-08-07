@@ -1027,27 +1027,40 @@
 
   // ── lembretes ───────────────────────────────────────────────
   // ── som de alerta ────────────────────────────────────────────
-  function playAlertSound(urgent) {
+  // ── sons de alerta ──────────────────────────────────────────
+  // soon   → lembrete antecipado (tom suave único)
+  // almoco → retorno do almoço (dois tons ascendentes)
+  // saida  → saída final (três tons celebratórios)
+  // late   → outros pontos atrasados (dois beeps rápidos)
+  function playAlertSound(tipo) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const beeps = urgent ? [880, 880] : [660];
-      let time = ctx.currentTime;
-      beeps.forEach(freq => {
-        const osc  = ctx.createOscillator();
+      let seq = [];
+      if (tipo === 'soon') {
+        seq = [{ freq:528, dur:0.3, vol:0.25, t:0 }];
+      } else if (tipo === 'almoco') {
+        seq = [{ freq:660, dur:0.25, vol:0.35, t:0 }, { freq:880, dur:0.35, vol:0.4, t:0.32 }];
+      } else if (tipo === 'saida') {
+        seq = [{ freq:660, dur:0.2, vol:0.35, t:0 }, { freq:784, dur:0.2, vol:0.38, t:0.27 }, { freq:1047, dur:0.45, vol:0.42, t:0.54 }];
+      } else {
+        seq = [{ freq:880, dur:0.2, vol:0.35, t:0 }, { freq:880, dur:0.2, vol:0.35, t:0.28 }];
+      }
+      seq.forEach(({ freq, dur, vol, t }) => {
+        const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, time);
-        gain.gain.setValueAtTime(0.35, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
-        osc.start(time); osc.stop(time + 0.35);
-        time += 0.45;
+        const st = ctx.currentTime + t;
+        osc.frequency.setValueAtTime(freq, st);
+        gain.gain.setValueAtTime(vol, st);
+        gain.gain.exponentialRampToValueAtTime(0.001, st + dur);
+        osc.start(st); osc.stop(st + dur);
       });
-    } catch(e) { /* browser não suporta, silencia */ }
+    } catch(e) {}
   }
 
-  function notify(title, body, urgent) {
-    playAlertSound(urgent);
+  function notify(title, body, soundTipo) {
+    playAlertSound(soundTipo);
     if (Notification.permission==='granted') new Notification(title, { body });
   }
 
@@ -1084,11 +1097,14 @@
     const lead = config.lembreteAntecedencia||0;
     const label = SLOT_DEFS.find(s=>s.key===next).label;
     const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-    if (nowMin>=targetMin && !lastNotified[key+next+'late']) {
-      notify('Ponto pendente', `${label} — previsto ${targetStr}`, true);
+    if (nowMin >= targetMin && !lastNotified[key+next+'late']) {
+      const soundTipo = next === 'retornoAlmoco' ? 'almoco'
+                      : next === 'saidaFinal'    ? 'saida'
+                      : 'late';
+      notify(`${label}`, `Previsto às ${targetStr} — bata o ponto!`, soundTipo);
       lastNotified[key+next+'late'] = true;
     } else if (lead > 0 && targetMin-nowMin <= lead && targetMin-nowMin >= 0 && !lastNotified[key+next+'soon']) {
-      notify('Ponto se aproximando', `${label} em ${targetMin-nowMin} min (${targetStr})`, false);
+      notify('Ponto se aproximando', `${label} em ${targetMin-nowMin} min (${targetStr})`, 'soon');
       lastNotified[key+next+'soon'] = true;
     }
   }
