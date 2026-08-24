@@ -1088,24 +1088,40 @@
   function checkReminders() {
     const key = todayKey();
     const day = registros[key]||{};
-    const next = nextSlotKey(day);
-    if (!next) return;
     const now = new Date();
     const nowMin = now.getHours()*60+now.getMinutes();
-    const targetMin = getTargetTime(next, day);
-    if (!targetMin) return;
-    const lead = config.lembreteAntecedencia||0;
-    const label = SLOT_DEFS.find(s=>s.key===next).label;
-    const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-    if (nowMin >= targetMin && !lastNotified[key+next+'late']) {
-      const soundTipo = next === 'retornoAlmoco' ? 'almoco'
-                      : next === 'saidaFinal'    ? 'saida'
-                      : 'late';
-      notify(`${label}`, `Previsto às ${targetStr} — bata o ponto!`, soundTipo);
-      lastNotified[key+next+'late'] = true;
-    } else if (lead > 0 && targetMin-nowMin <= lead && targetMin-nowMin >= 0 && !lastNotified[key+next+'soon']) {
-      notify('Ponto se aproximando', `${label} em ${targetMin-nowMin} min (${targetStr})`, 'soon');
-      lastNotified[key+next+'soon'] = true;
+    const LEAD = 10; // fixo em 10 minutos
+
+    // ── Retorno do almoço ─────────────────────────────────────
+    // só avisa se já saiu pro almoço e ainda não voltou
+    if (day.saidaAlmoco && !day.retornoAlmoco) {
+      const targetMin = toMinutes(config.retornoAlmoco);
+      if (targetMin) {
+        const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
+        if (nowMin === targetMin && !lastNotified[key+'retornoAlmoco_late']) {
+          notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
+          lastNotified[key+'retornoAlmoco_late'] = true;
+        } else if (targetMin - nowMin === LEAD && !lastNotified[key+'retornoAlmoco_soon']) {
+          notify('🔔 Meu Ponto Certo', `Retorno do almoço em ${LEAD} min (${targetStr})`, 'soon');
+          lastNotified[key+'retornoAlmoco_soon'] = true;
+        }
+      }
+    }
+
+    // ── Saída final ───────────────────────────────────────────
+    // só avisa se já voltou do almoço e ainda não bateu a saída
+    if (day.retornoAlmoco && !day.saidaFinal) {
+      const targetMin = calcSaidaPrevista(day);
+      if (targetMin) {
+        const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
+        if (nowMin === targetMin && !lastNotified[key+'saidaFinal_late']) {
+          notify('🎉 Hora de ir embora!', `Saída prevista: ${targetStr} — bata o ponto!`, 'saida');
+          lastNotified[key+'saidaFinal_late'] = true;
+        } else if (targetMin - nowMin === LEAD && !lastNotified[key+'saidaFinal_soon']) {
+          notify('🔔 Meu Ponto Certo', `Saída em ${LEAD} min (${targetStr})`, 'soon');
+          lastNotified[key+'saidaFinal_soon'] = true;
+        }
+      }
     }
   }
 
