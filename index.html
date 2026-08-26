@@ -1202,12 +1202,12 @@
     // ── refresh robusto ao reabrir o app ─────────────────────
     // o iOS PWA não dispara visibilitychange de forma confiável,
     // então usamos três eventos combinados + timestamp
-    let lastRefresh = Date.now();
+    let lastRefresh = 0; // 0 = força refresh na primeira vez
     const REFRESH_INTERVAL = 30 * 1000; // recarrega se ficou 30s+ fora
 
-    async function refreshIfNeeded() {
+    async function refreshIfNeeded(force) {
       const agora = Date.now();
-      if (agora - lastRefresh > REFRESH_INTERVAL) {
+      if (force || agora - lastRefresh > REFRESH_INTERVAL) {
         lastRefresh = agora;
         await loadRegistros();
         await verificarDadosDoDia();
@@ -1223,14 +1223,12 @@
 
     // pageshow — dispara no iOS ao voltar pro app via multitarefa
     window.addEventListener('pageshow', async (e) => {
-      // persisted = true quando vem do cache do browser (bfcache)
       if (e.persisted || document.visibilityState === 'visible') {
-        lastRefresh = 0; // força refresh
-        await refreshIfNeeded();
+        await refreshIfNeeded(true); // força sempre
       }
     });
 
-    // focus — fallback pra quando nenhum dos outros disparar
+    // focus — fallback pra quando nenhum dos outros disparar (PWA desktop)
     window.addEventListener('focus', async () => {
       await refreshIfNeeded();
     });
