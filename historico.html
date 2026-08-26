@@ -599,6 +599,36 @@
     sb.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') location.href = './index.html';
     });
+
+    // ── refresh ao voltar de outra aba ────────────────────────
+    let lastRefresh = Date.now();
+    const REFRESH_INTERVAL = 30 * 1000;
+
+    async function refreshIfNeeded(force) {
+      const agora = Date.now();
+      if (force || agora - lastRefresh > REFRESH_INTERVAL) {
+        lastRefresh = agora;
+        const { from, to } = getPeriodo(periodoAtual);
+        await loadRegistros(from, to);
+      }
+    }
+
+    // pageshow — dispara ao voltar via bfcache (navegação entre páginas)
+    window.addEventListener('pageshow', async (e) => {
+      if (e.persisted || document.visibilityState === 'visible') {
+        await refreshIfNeeded(true);
+      }
+    });
+
+    // visibilitychange — ao focar a aba
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') await refreshIfNeeded();
+    });
+
+    // focus — fallback desktop
+    window.addEventListener('focus', async () => {
+      await refreshIfNeeded();
+    });
   }
 
   init();
