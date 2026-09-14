@@ -1090,7 +1090,7 @@
     const day = registros[key]||{};
     const now = new Date();
     const nowMin = now.getHours()*60+now.getMinutes();
-    const LEAD = 10; // fixo em 10 minutos
+    const LEAD = 10; // minutos de antecedência
 
     // ── Retorno do almoço ─────────────────────────────────────
     // só avisa se já saiu pro almoço e ainda não voltou
@@ -1098,11 +1098,14 @@
       const targetMin = toMinutes(config.retornoAlmoco);
       if (targetMin) {
         const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-        if (nowMin === targetMin && !lastNotified[key+'retornoAlmoco_late']) {
+        const diff = targetMin - nowMin;
+        // hora exata ou passou (janela de até 2 min pra não perder)
+        if (diff <= 0 && diff >= -2 && !lastNotified[key+'retornoAlmoco_late']) {
           notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
           lastNotified[key+'retornoAlmoco_late'] = true;
-        } else if (targetMin - nowMin === LEAD && !lastNotified[key+'retornoAlmoco_soon']) {
-          notify('🔔 Meu Ponto Certo', `Retorno do almoço em ${LEAD} min (${targetStr})`, 'soon');
+        // lembrete antecipado (janela entre 10 e 11 min antes)
+        } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'retornoAlmoco_soon']) {
+          notify('🔔 Meu Ponto Certo', `Retorno do almoço em ~${diff} min (${targetStr})`, 'soon');
           lastNotified[key+'retornoAlmoco_soon'] = true;
         }
       }
@@ -1114,11 +1117,14 @@
       const targetMin = calcSaidaPrevista(day);
       if (targetMin) {
         const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-        if (nowMin === targetMin && !lastNotified[key+'saidaFinal_late']) {
+        const diff = targetMin - nowMin;
+        // hora exata ou passou (janela de até 2 min)
+        if (diff <= 0 && diff >= -2 && !lastNotified[key+'saidaFinal_late']) {
           notify('🎉 Hora de ir embora!', `Saída prevista: ${targetStr} — bata o ponto!`, 'saida');
           lastNotified[key+'saidaFinal_late'] = true;
-        } else if (targetMin - nowMin === LEAD && !lastNotified[key+'saidaFinal_soon']) {
-          notify('🔔 Meu Ponto Certo', `Saída em ${LEAD} min (${targetStr})`, 'soon');
+        // lembrete antecipado (janela entre 10 e 11 min antes)
+        } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'saidaFinal_soon']) {
+          notify('🔔 Meu Ponto Certo', `Saída em ~${diff} min (${targetStr})`, 'soon');
           lastNotified[key+'saidaFinal_soon'] = true;
         }
       }
@@ -1196,7 +1202,7 @@
     bindEvents();
     render();
     setInterval(() => { renderClock(); renderSummary(); }, 1000);
-    setInterval(checkReminders, 30000);
+    setInterval(checkReminders, 10000);
     checkReminders();
 
     // ── refresh robusto ao reabrir o app ─────────────────────
