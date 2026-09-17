@@ -175,8 +175,7 @@
   <div class="h-period-card">
     <div class="h-period-label">Período</div>
     <div class="h-period-tabs">
-      <button class="h-period-tab active" data-period="quinzena">Quinzenal</button>
-      <button class="h-period-tab" data-period="mes">Mensal</button>
+      <button class="h-period-tab active" data-period="mes">Mensal</button>
       <button class="h-period-tab" data-period="custom">Período</button>
     </div>
     <div class="h-period-custom" id="h-period-custom" style="display:none;">
@@ -249,7 +248,7 @@
   let currentUser = null;
   let registros = [];
   let config = { entrada:'09:00', saidaAlmoco:'12:00', retornoAlmoco:'13:00', saidaFinal:'18:19', saldoInicialMinutos: 0 };
-  let periodoAtual = 'quinzena';
+  let periodoAtual = 'mes';
   let dateFrom = null, dateTo = null;
 
   const $ = id => document.getElementById(id);
@@ -574,7 +573,7 @@
     await loadConfig();
 
     // período inicial: quinzena
-    const periodo = getPeriodo('quinzena');
+    const periodo = getPeriodo('mes');
     await loadRegistros(periodo.from, periodo.to);
 
     // tabs

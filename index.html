@@ -182,12 +182,16 @@
   @keyframes cp-stamp-hit { 0%{opacity:0; transform: scale(2.4) rotate(-14deg);} 45%{opacity:0.95; transform: scale(0.92) rotate(-8deg);} 60%{opacity:0.95; transform: scale(1.05) rotate(-10deg);} 100%{opacity:0; transform: scale(1) rotate(-9deg);} }
 
   /* summary */
-  .cp-summary-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 20px; }
+  .cp-summary-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
   .cp-summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
   .cp-summary-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .cp-summary-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; }
   .cp-banco-zerar-btn { background: none; border: 1px solid var(--border-strong); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-family: 'Geist', sans-serif; transition: all .15s; white-space: nowrap; }
   .cp-banco-zerar-btn:hover { border-color: var(--bad); color: var(--bad); }
+  .cp-descanso-banner { display: flex; align-items: center; gap: 14px; background: #f0eeff; border: 1px solid rgba(91,76,245,0.25); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+  .cp-descanso-icon { font-size: 32px; flex-shrink: 0; }
+  .cp-descanso-title { font-size: 15px; font-weight: 700; color: var(--brand-deep); }
+  .cp-descanso-sub { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
   .cp-slots-divider { display: flex; align-items: center; gap: 10px; margin: 2px 0; cursor: pointer; }
   .cp-slots-divider::before, .cp-slots-divider::after { content:''; flex:1; height:1px; background: var(--border); }
   .cp-slots-divider span { font-size: 12px; color: var(--brand); white-space: nowrap; font-weight: 500; }
@@ -273,8 +277,7 @@
     .cp-stamp-btn-wrap { margin-top: 16px; }
 
     /* summary: mantém 2 colunas mas ajusta padding */
-    .cp-summary-grid { gap: 10px; grid-template-columns: 1fr 1fr; }
-    .cp-summary-box:last-child { grid-column: 1 / -1; }
+    .cp-summary-grid { gap: 10px; }
     .cp-summary-box { padding: 12px 12px; }
     .cp-summary-value { font-size: 22px; }
 
@@ -391,6 +394,16 @@
   </div>
 
   <div class="cp-body">
+
+  <!-- banner dia de descanso -->
+  <div id="cp-descanso-banner" style="display:none;" class="cp-descanso-banner">
+    <span class="cp-descanso-icon">😴</span>
+    <div>
+      <div class="cp-descanso-title">Dia de descanso!</div>
+      <div class="cp-descanso-sub">Hoje não é um dia de trabalho configurado.</div>
+    </div>
+  </div>
+
   <div class="cp-card-wrap">
     <div class="cp-card-title">Hoje</div>
     <div class="cp-slots" id="cp-slots"></div>
@@ -411,14 +424,6 @@
       <div class="cp-summary-label">Previsão de saída</div>
       <div class="cp-summary-value mono" id="cp-saida-prevista">--:--</div>
       <div class="cp-summary-note" id="cp-saida-prevista-note">aguardando entrada</div>
-    </div>
-    <div class="cp-summary-box">
-      <div class="cp-summary-box-header">
-        <div class="cp-summary-label">Banco de horas</div>
-        <button class="cp-banco-zerar-btn" id="cp-banco-zerar-btn" title="Zerar banco de horas">↺ Zerar</button>
-      </div>
-      <div class="cp-summary-value mono" id="cp-banco-total">--:--</div>
-      <div class="cp-summary-note" id="cp-banco-note">acumulado dos dias fechados</div>
     </div>
   </div>
 
@@ -490,7 +495,8 @@
     entrada:'09:00', saidaAlmoco:'12:00', retornoAlmoco:'13:00',
     saidaFinal:'18:19', saidaExtra:'', retornoExtra:'',
     lembreteAntecedencia:5, saldoInicialMinutos:0, marcoZeroData: null,
-    sheetsUrl:'', sheetsSpreadsheetUrl:''
+    sheetsUrl:'', sheetsSpreadsheetUrl:'',
+    diasTrabalho: [1,2,3,4,5] // seg a sex por padrão
   };
   let config = { ...DEFAULT_CONFIG };
   let registros = {};
@@ -559,6 +565,14 @@
   async function loadConfig() {
     const { data } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
     if (data) {
+      // saldo_inicial_minutos: usa Number() explícito pra preservar negativos
+      const saldoRaw = data.saldo_inicial_minutos;
+      const saldoVal = (saldoRaw !== null && saldoRaw !== undefined) ? Number(saldoRaw) : 0;
+
+      // dias_trabalho: vem como string "1,2,3,4,5" do Supabase
+      const diasRaw = data.dias_trabalho || '1,2,3,4,5';
+      const diasVal = diasRaw.split(',').map(Number);
+
       config = {
         entrada:              data.entrada              || DEFAULT_CONFIG.entrada,
         saidaAlmoco:          data.saida_almoco         || DEFAULT_CONFIG.saidaAlmoco,
@@ -567,10 +581,10 @@
         saidaExtra:           data.saida_extra          || '',
         retornoExtra:         data.retorno_extra        || '',
         lembreteAntecedencia: data.lembrete_antecedencia ?? 5,
-        saldoInicialMinutos:  data.saldo_inicial_minutos ?? 0,
+        saldoInicialMinutos:  saldoVal,
         sheetsUrl:            '',
         sheetsSpreadsheetUrl: '',
-        // Supabase primeiro, fallback localStorage (garante persistência mesmo sem a coluna)
+        diasTrabalho:         diasVal,
         marcoZeroData: data.marco_zero_data
           || localStorage.getItem('mpc_marco_zero_' + currentUser.id)
           || null
@@ -595,7 +609,8 @@
       retorno_extra:         config.retornoExtra,
       lembrete_antecedencia: config.lembreteAntecedencia,
       saldo_inicial_minutos: config.saldoInicialMinutos,
-      marco_zero_data:       config.marcoZeroData || null
+      marco_zero_data:       config.marcoZeroData || null,
+      dias_trabalho:         (config.diasTrabalho || [1,2,3,4,5]).join(',')
     }, { onConflict: 'user_id' });
   }
 
@@ -721,7 +736,18 @@
     const el = $('cp-sync-status');
     if (el) el.textContent = text;
   }
-  function render() { renderClock(); renderSlots(); renderSummary(); }
+  function checkDiaDescanso() {
+    const diaSemana = new Date().getDay(); // 0=dom, 1=seg...6=sab
+    const diasTrabalho = config.diasTrabalho || [1,2,3,4,5];
+    const banner = $('cp-descanso-banner');
+    if (!diasTrabalho.includes(diaSemana)) {
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function render() { renderClock(); renderSlots(); renderSummary(); checkDiaDescanso(); }
 
   function renderClock() {
     const d = new Date();
@@ -1006,12 +1032,36 @@
           <label>Lembrete com antecedência (min)</label>
           <input type="number" id="cp-cfg-lembrete" min="0" max="30" value="${config.lembreteAntecedencia}">
         </div>
+        <div class="cp-field">
+          <label>Dias de trabalho</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            ${[['D','0'],['S','1'],['T','2'],['Q','3'],['Q','4'],['S','5'],['S','6']].map(([label,val]) => {
+              const ativo = (config.diasTrabalho||[1,2,3,4,5]).includes(Number(val));
+              return `<button type="button" class="cp-dia-btn${ativo?' active':''}" data-dia="${val}" style="
+                width:36px;height:36px;border-radius:50%;border:1px solid ${ativo?'var(--brand)':'var(--border-strong)'};
+                background:${ativo?'var(--brand)':'transparent'};color:${ativo?'#fff':'var(--ink-soft)'};
+                font-size:12px;font-weight:600;cursor:pointer;font-family:'Geist';transition:all .15s;">${label}</button>`;
+            }).join('')}
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;">Dom · Seg · Ter · Qua · Qui · Sex · Sáb</div>
+        </div>
         <div class="cp-modal-actions">
           <button type="button" class="cp-btn-ghost" id="cp-cfg-cancel">Cancelar</button>
           <button type="button" class="cp-btn-primary" id="cp-cfg-save">Salvar</button>
         </div>
       </div>`;
     mountOverlay(overlay);
+
+    // toggle dos botões de dia
+    overlay.querySelectorAll('.cp-dia-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ativo = btn.classList.toggle('active');
+        btn.style.background = ativo ? 'var(--brand)' : 'transparent';
+        btn.style.color = ativo ? '#fff' : 'var(--ink-soft)';
+        btn.style.borderColor = ativo ? 'var(--brand)' : 'var(--border-strong)';
+      });
+    });
+
     overlay.querySelector('#cp-cfg-cancel').onclick = () => overlay.remove();
     overlay.querySelector('#cp-cfg-save').onclick = async () => {
       overlay.querySelectorAll('input[type=time]').forEach(inp => { if (inp.dataset.key) config[inp.dataset.key]=inp.value; });
@@ -1020,6 +1070,7 @@
       const partes = saldoRaw.split(':');
       config.saldoInicialMinutos = saldoSinal*((parseInt(partes[0],10)||0)*60+(parseInt(partes[1],10)||0));
       config.lembreteAntecedencia = Number(overlay.querySelector('#cp-cfg-lembrete').value)||0;
+      config.diasTrabalho = Array.from(overlay.querySelectorAll('.cp-dia-btn.active')).map(b => Number(b.dataset.dia));
       await saveConfig();
       overlay.remove(); render();
     };
