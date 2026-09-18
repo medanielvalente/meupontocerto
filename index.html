@@ -563,15 +563,19 @@
 
   // ── Supabase: config ────────────────────────────────────────
   async function loadConfig() {
-    const { data } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
-    if (data) {
-      // saldo_inicial_minutos: usa Number() explícito pra preservar negativos
-      const saldoRaw = data.saldo_inicial_minutos;
-      const saldoVal = (saldoRaw !== null && saldoRaw !== undefined) ? Number(saldoRaw) : 0;
+    try {
+      const { data, error } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
+      if (error || !data) return; // usa DEFAULT_CONFIG se não encontrar
 
-      // dias_trabalho: vem como string "1,2,3,4,5" do Supabase
-      const diasRaw = data.dias_trabalho || '1,2,3,4,5';
-      const diasVal = diasRaw.split(',').map(Number);
+      const saldoRaw = data.saldo_inicial_minutos;
+      const saldoVal = (saldoRaw !== null && saldoRaw !== undefined && !isNaN(Number(saldoRaw)))
+        ? Number(saldoRaw) : 0;
+
+      // dias_trabalho: pode não existir ainda no banco
+      let diasVal = [1,2,3,4,5];
+      try {
+        if (data.dias_trabalho) diasVal = data.dias_trabalho.split(',').map(Number).filter(n => !isNaN(n));
+      } catch(e) {}
 
       config = {
         entrada:              data.entrada              || DEFAULT_CONFIG.entrada,
@@ -589,6 +593,9 @@
           || localStorage.getItem('mpc_marco_zero_' + currentUser.id)
           || null
       };
+    } catch(e) {
+      console.error('loadConfig erro:', e);
+      // mantém DEFAULT_CONFIG em caso de falha
     }
   }
 
@@ -737,14 +744,13 @@
     if (el) el.textContent = text;
   }
   function checkDiaDescanso() {
-    const diaSemana = new Date().getDay(); // 0=dom, 1=seg...6=sab
-    const diasTrabalho = config.diasTrabalho || [1,2,3,4,5];
-    const banner = $('cp-descanso-banner');
-    if (!diasTrabalho.includes(diaSemana)) {
-      banner.style.display = 'flex';
-    } else {
-      banner.style.display = 'none';
-    }
+    try {
+      const diaSemana = new Date().getDay();
+      const diasTrabalho = Array.isArray(config.diasTrabalho) ? config.diasTrabalho : [1,2,3,4,5];
+      const banner = $('cp-descanso-banner');
+      if (!banner) return;
+      banner.style.display = diasTrabalho.includes(diaSemana) ? 'none' : 'flex';
+    } catch(e) { console.error('checkDiaDescanso:', e); }
   }
 
   function render() { renderClock(); renderSlots(); renderSummary(); checkDiaDescanso(); }
