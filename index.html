@@ -387,7 +387,7 @@
           <div class="cp-clock-time mono" id="cp-clock-time">--:--:--</div>
           <div class="cp-clock-date" id="cp-clock-date"></div>
         </div>
-        <button class="cp-gear" id="cp-open-config" title="Ajustar horários">⚙</button>
+        <button class="cp-gear" id="cp-open-config" title="Configurações">⚙</button>
         <button class="cp-gear" id="cp-logout-btn" title="Sair" style="font-size:14px;">↩</button>
       </div>
     </div>
@@ -608,7 +608,7 @@
       saida_extra:           config.saidaExtra,
       retorno_extra:         config.retornoExtra,
       lembrete_antecedencia: config.lembreteAntecedencia,
-      saldo_inicial_minutos: config.saldoInicialMinutos,
+      saldo_inicial_minutos: isNaN(config.saldoInicialMinutos) ? 0 : config.saldoInicialMinutos,
       marco_zero_data:       config.marcoZeroData || null,
       dias_trabalho:         (config.diasTrabalho || [1,2,3,4,5]).join(',')
     }, { onConflict: 'user_id' });
@@ -1013,7 +1013,7 @@
     overlay.className = 'cp-modal-overlay';
     overlay.innerHTML = `
       <div class="cp-modal">
-        <h3>Ajustar horários padrão</h3>
+        <h3>Configurações</h3>
         ${SLOT_DEFS.filter(s=>s.row===1).map(s=>`
           <div class="cp-field"><label>${s.label}</label>
             <input type="time" data-key="${s.key}" value="${config[s.key]}"></div>`).join('')}
@@ -1187,7 +1187,6 @@
     $('cp-stamp-btn').addEventListener('click', punch);
     $('cp-open-config').addEventListener('click', openConfig);
     $('cp-logout-btn').addEventListener('click', signOut);
-    $('cp-banco-zerar-btn').addEventListener('click', confirmZerarBanco);
   }
 
   // ── init ────────────────────────────────────────────────────
