@@ -1247,58 +1247,61 @@
     }
   }
   async function startApp(user) {
-    currentUser = user;
-    showLoading();
-    renderSaudacao(user);
-    await loadConfig();
-    await loadRegistros();
-    await verificarDadosDoDia(); // garante que os dados do dia estão atualizados
-    hideLoading();
-    showApp();
-    bindEvents();
-    render();
-    setInterval(() => { renderClock(); renderSummary(); }, 1000);
-    setInterval(checkReminders, 10000);
-    checkReminders();
+    try {
+      currentUser = user;
+      showLoading();
+      renderSaudacao(user);
+      await loadConfig();
+      await loadRegistros();
+      await verificarDadosDoDia();
+      hideLoading();
+      showApp();
+      bindEvents();
+      render();
+      setInterval(() => { try { renderClock(); renderSummary(); } catch(e){} }, 1000);
+      setInterval(() => { try { checkReminders(); } catch(e){} }, 10000);
+      checkReminders();
 
-    // ── refresh robusto ao reabrir o app ─────────────────────
-    // o iOS PWA não dispara visibilitychange de forma confiável,
-    // então usamos três eventos combinados + timestamp
-    let lastRefresh = 0; // 0 = força refresh na primeira vez
-    const REFRESH_INTERVAL = 30 * 1000; // recarrega se ficou 30s+ fora
+      let lastRefresh = 0;
+      const REFRESH_INTERVAL = 30 * 1000;
 
-    async function refreshIfNeeded(force) {
-      const agora = Date.now();
-      if (force || agora - lastRefresh > REFRESH_INTERVAL) {
-        lastRefresh = agora;
-        await loadRegistros();
-        await verificarDadosDoDia();
-        render();
-        checkReminders();
+      async function refreshIfNeeded(force) {
+        const agora = Date.now();
+        if (force || agora - lastRefresh > REFRESH_INTERVAL) {
+          lastRefresh = agora;
+          await loadRegistros();
+          await verificarDadosDoDia();
+          render();
+          checkReminders();
+        }
       }
-    }
 
-    // visibilitychange — funciona em desktop e alguns mobile
-    document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') await refreshIfNeeded();
-    });
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') await refreshIfNeeded();
+      });
 
-    // pageshow — dispara no iOS ao voltar pro app via multitarefa
-    window.addEventListener('pageshow', async (e) => {
-      if (e.persisted || document.visibilityState === 'visible') {
-        await refreshIfNeeded(true); // força sempre
+      window.addEventListener('pageshow', async (e) => {
+        if (e.persisted || document.visibilityState === 'visible') {
+          await refreshIfNeeded(true);
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        await refreshIfNeeded();
+      });
+
+      if ('Notification' in window) {
+        if (Notification.permission==='granted') { notifOn=true; }
+        else if (Notification.permission!=='denied') {
+          Notification.requestPermission().then(p => { notifOn = p==='granted'; });
+        }
       }
-    });
-
-    // focus — fallback pra quando nenhum dos outros disparar (PWA desktop)
-    window.addEventListener('focus', async () => {
-      await refreshIfNeeded();
-    });
-    if ('Notification' in window) {
-      if (Notification.permission==='granted') { notifOn=true; }
-      else if (Notification.permission!=='denied') {
-        Notification.requestPermission().then(p => { notifOn = p==='granted'; });
-      }
+    } catch(e) {
+      console.error('startApp erro:', e);
+      // mesmo com erro, tenta mostrar o app
+      hideLoading();
+      showApp();
+      try { render(); } catch(e2) { console.error('render erro:', e2); }
     }
   }
 
