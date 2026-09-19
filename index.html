@@ -1017,6 +1017,24 @@
   function openConfig() {
     const overlay = document.createElement('div');
     overlay.className = 'cp-modal-overlay';
+
+    // gera botões dos dias separadamente para evitar template literal aninhado
+    const DIAS = [['D',0],['S',1],['T',2],['Q',3],['Q',4],['S',5],['S',6]];
+    const diasAtivos = config.diasTrabalho || [1,2,3,4,5];
+    const botooesDias = DIAS.map(([label, val]) => {
+      const ativo = diasAtivos.includes(val);
+      const bg    = ativo ? '#5B4CF5' : 'transparent';
+      const cor   = ativo ? '#fff' : '#52596e';
+      const borda = ativo ? '#5B4CF5' : '#d7d7da';
+      return `<button type="button" class="cp-dia-btn${ativo?' active':''}" data-dia="${val}"
+        style="width:36px;height:36px;border-radius:50%;border:1px solid ${borda};
+        background:${bg};color:${cor};font-size:12px;font-weight:600;cursor:pointer;
+        font-family:'Geist';transition:all .15s;">${label}</button>`;
+    }).join('');
+
+    const saldoHHMM = minutesToHHMM(Math.abs(parseInt(config.saldoInicialMinutos,10)||0));
+    const saldoPositivo = (config.saldoInicialMinutos||0) >= 0;
+
     overlay.innerHTML = `
       <div class="cp-modal">
         <h3>Configurações</h3>
@@ -1027,10 +1045,10 @@
           <label>Saldo inicial do banco de horas</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <select id="cp-cfg-saldo-sinal" style="background:var(--surface-alt);border:1px solid var(--border-strong);border-radius:6px;padding:8px 6px;color:var(--brand-deep);font-family:'Geist';font-size:14px;">
-              <option value="1"  ${(config.saldoInicialMinutos||0)>=0?'selected':''}>+</option>
-              <option value="-1" ${(config.saldoInicialMinutos||0)<0?'selected':''}>−</option>
+              <option value="1" ${saldoPositivo?'selected':''}>+</option>
+              <option value="-1" ${!saldoPositivo?'selected':''}>−</option>
             </select>
-            <input type="time" id="cp-cfg-saldo-hhmm" value="${minutesToHHMM(Math.abs(parseInt(config.saldoInicialMinutos,10)||0))}" style="flex:1">
+            <input type="time" id="cp-cfg-saldo-hhmm" value="${saldoHHMM}" style="flex:1">
           </div>
           <div style="font-size:10.5px;color:var(--ink-soft);margin-top:4px;">Saldo acumulado antes de começar a usar o app</div>
         </div>
@@ -1040,15 +1058,7 @@
         </div>
         <div class="cp-field">
           <label>Dias de trabalho</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-            ${[['D','0'],['S','1'],['T','2'],['Q','3'],['Q','4'],['S','5'],['S','6']].map(([label,val]) => {
-              const ativo = (config.diasTrabalho||[1,2,3,4,5]).includes(Number(val));
-              return `<button type="button" class="cp-dia-btn${ativo?' active':''}" data-dia="${val}" style="
-                width:36px;height:36px;border-radius:50%;border:1px solid ${ativo?'var(--brand)':'var(--border-strong)'};
-                background:${ativo?'var(--brand)':'transparent'};color:${ativo?'#fff':'var(--ink-soft)'};
-                font-size:12px;font-weight:600;cursor:pointer;font-family:'Geist';transition:all .15s;">${label}</button>`;
-            }).join('')}
-          </div>
+          <div id="cp-dias-wrap" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">${botooesDias}</div>
           <div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;">Dom · Seg · Ter · Qua · Qui · Sex · Sáb</div>
         </div>
         <div class="cp-modal-actions">
@@ -1056,29 +1066,31 @@
           <button type="button" class="cp-btn-primary" id="cp-cfg-save">Salvar</button>
         </div>
       </div>`;
+
     mountOverlay(overlay);
 
     // toggle dos botões de dia
     overlay.querySelectorAll('.cp-dia-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const ativo = btn.classList.toggle('active');
-        btn.style.background = ativo ? 'var(--brand)' : 'transparent';
-        btn.style.color = ativo ? '#fff' : 'var(--ink-soft)';
-        btn.style.borderColor = ativo ? 'var(--brand)' : 'var(--border-strong)';
+        btn.style.background   = ativo ? '#5B4CF5' : 'transparent';
+        btn.style.color        = ativo ? '#fff' : '#52596e';
+        btn.style.borderColor  = ativo ? '#5B4CF5' : '#d7d7da';
       });
     });
 
     overlay.querySelector('#cp-cfg-cancel').onclick = () => overlay.remove();
     overlay.querySelector('#cp-cfg-save').onclick = async () => {
       overlay.querySelectorAll('input[type=time]').forEach(inp => { if (inp.dataset.key) config[inp.dataset.key]=inp.value; });
-      const saldoRaw = overlay.querySelector('#cp-cfg-saldo-hhmm').value||'00:00';
+      const saldoRaw   = overlay.querySelector('#cp-cfg-saldo-hhmm').value||'00:00';
       const saldoSinal = Number(overlay.querySelector('#cp-cfg-saldo-sinal').value)||1;
-      const partes = saldoRaw.split(':');
+      const partes     = saldoRaw.split(':');
       config.saldoInicialMinutos = saldoSinal*((parseInt(partes[0],10)||0)*60+(parseInt(partes[1],10)||0));
       config.lembreteAntecedencia = Number(overlay.querySelector('#cp-cfg-lembrete').value)||0;
       config.diasTrabalho = Array.from(overlay.querySelectorAll('.cp-dia-btn.active')).map(b => Number(b.dataset.dia));
       await saveConfig();
-      overlay.remove(); render();
+      overlay.remove();
+      render();
     };
   }
 
