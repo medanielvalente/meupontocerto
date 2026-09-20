@@ -290,22 +290,13 @@
 
   // ── período ───────────────────────────────────────────────────
   function getPeriodo(tipo) {
-    const hoje = new Date();
-    const y = hoje.getFullYear(), m = hoje.getMonth();
-    if (tipo === 'quinzena') {
-      const d = hoje.getDate();
-      if (d <= 15) return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-15` };
-      const ultimo = new Date(y, m+1, 0).getDate();
-      return { from: `${y}-${String(m+1).padStart(2,'0')}-16`, to: `${y}-${String(m+1).padStart(2,'0')}-${ultimo}` };
-    }
+    // usa data local (BRT) para evitar problema de timezone UTC
+    const agora = new Date();
+    const hoje = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000);
+    const y = hoje.getUTCFullYear(), m = hoje.getUTCMonth();
     if (tipo === 'mes') {
       const ultimo = new Date(y, m+1, 0).getDate();
-      return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-${ultimo}` };
-    }
-    if (tipo === 'mes-anterior') {
-      const mAnt = m === 0 ? 12 : m, yAnt = m === 0 ? y-1 : y;
-      const ultimo = new Date(yAnt, mAnt, 0).getDate();
-      return { from: `${yAnt}-${String(mAnt).padStart(2,'0')}-01`, to: `${yAnt}-${String(mAnt).padStart(2,'0')}-${ultimo}` };
+      return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}` };
     }
     return { from: dateFrom, to: dateTo };
   }

@@ -617,7 +617,7 @@
       saida_extra:           config.saidaExtra,
       retorno_extra:         config.retornoExtra,
       lembrete_antecedencia: config.lembreteAntecedencia,
-      saldo_inicial_minutos: isNaN(config.saldoInicialMinutos) ? 0 : config.saldoInicialMinutos,
+      saldo_inicial_minutos: (config.saldoInicialMinutos === 0 || !isNaN(config.saldoInicialMinutos)) ? Number(config.saldoInicialMinutos) : 0,
       marco_zero_data:       config.marcoZeroData || null,
       dias_trabalho:         (config.diasTrabalho || [1,2,3,4,5]).join(',')
     }, { onConflict: 'user_id' });
