@@ -99,26 +99,26 @@
   @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap');
 
   #cp-root {
-    /* Paleta oficial: Bright Blue / Mid Blue / Deep Blue + cinzas */
-    --brand: #5B4CF5;       /* Bright Blue — sempre sólida, nunca degradê */
-    --brand-mid: #4A3DD4;   /* Mid Blue */
-    --brand-deep: #2D1F8E;  /* Deep Blue */
-    --white: #ffffff;
-    --grey-1: #fafafa;
-    --grey-2: #f5f5f7;
-    --grey-3: #e8e8ee;
-    --grey-4: #d7d7da;
-    --black: #000000;
-    --good: #146c43;        /* verde funcional (status), fora da paleta de marca */
-    --bad: #b3261e;         /* vermelho funcional (status), fora da paleta de marca */
+    /* Paleta: Slate Purple */
+    --brand:      #5B4CF5;  /* Slate Purple — cor principal */
+    --brand-mid:  #4A3DD4;  /* Slate Purple — hover/mid */
+    --brand-deep: #2D1F8E;  /* Slate Purple — deep/títulos */
+    --white:      #ffffff;
+    --grey-1:     #fafafa;
+    --grey-2:     #f5f5f7;
+    --grey-3:     #e8e8ee;
+    --grey-4:     #d7d7da;
+    --black:      #000000;
+    --good:       #146c43;  /* verde — saldo positivo */
+    --bad:        #b3261e;  /* vermelho — saldo negativo */
 
-    --bg: var(--grey-1);
-    --surface: var(--white);
-    --surface-alt: var(--grey-2);
-    --border: var(--grey-3);
+    --bg:           var(--grey-1);
+    --surface:      var(--white);
+    --surface-alt:  var(--grey-2);
+    --border:       var(--grey-3);
     --border-strong: var(--grey-4);
-    --ink: var(--black);
-    --ink-soft: #52596e;
+    --ink:          var(--black);
+    --ink-soft:     #52596e;
 
     font-family: 'Geist', sans-serif;
     font-size: 16px;
@@ -568,8 +568,10 @@
       if (error || !data) return; // usa DEFAULT_CONFIG se não encontrar
 
       const saldoRaw = data.saldo_inicial_minutos;
+      // só usa o valor do Supabase se for um número válido e não-nulo
       const saldoVal = (saldoRaw !== null && saldoRaw !== undefined && !isNaN(Number(saldoRaw)))
-        ? Number(saldoRaw) : 0;
+        ? Number(saldoRaw)
+        : 0;
 
       // dias_trabalho: pode não existir ainda no banco
       let diasVal = [1,2,3,4,5];
@@ -1264,6 +1266,7 @@
       showLoading();
       renderSaudacao(user);
       await loadConfig();
+      checkDiaDescanso(); // mostra banner de descanso logo após carregar config
       await loadRegistros();
       await verificarDadosDoDia();
       hideLoading();
