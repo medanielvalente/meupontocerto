@@ -646,27 +646,38 @@
   }
 
   async function saveRegistro(key) {
+    if (!currentUser) { console.error('saveRegistro: currentUser nulo'); return; }
     const day = registros[key];
     if (!day) return;
     const worked = workedMinutesForDay(day);
     const expected = expectedWorkedMinutes();
     const saldo = worked !== null ? worked - expected : null;
     const manual = !!(day.manual && Object.keys(day.manual).length);
-    await sb.from('registros').upsert({
-      user_id:        currentUser.id,
-      data:           key,
-      entrada:        day.entrada       || null,
-      saida_almoco:   day.saidaAlmoco   || null,
-      retorno_almoco: day.retornoAlmoco || null,
-      saida_final:    day.saidaFinal    || null,
-      saida_extra:    day.saidaExtra    || null,
-      retorno_extra:  day.retornoExtra  || null,
-      trabalhado:     worked !== null ? minutesToHHMM(worked) : null,
-      meta:           minutesToHHMM(expected),
-      saldo:          saldo  !== null ? minutesToHHMM(saldo, true) : null,
-      manual
-    }, { onConflict: 'user_id,data' });
-    setSyncStatus('Salvo às ' + nowHHMM());
+    try {
+      const { error } = await sb.from('registros').upsert({
+        user_id:        currentUser.id,
+        data:           key,
+        entrada:        day.entrada       || null,
+        saida_almoco:   day.saidaAlmoco   || null,
+        retorno_almoco: day.retornoAlmoco || null,
+        saida_final:    day.saidaFinal    || null,
+        saida_extra:    day.saidaExtra    || null,
+        retorno_extra:  day.retornoExtra  || null,
+        trabalhado:     worked !== null ? minutesToHHMM(worked) : null,
+        meta:           minutesToHHMM(expected),
+        saldo:          saldo !== null ? minutesToHHMM(saldo, true) : null,
+        manual
+      }, { onConflict: 'user_id,data' });
+      if (error) {
+        console.error('saveRegistro erro:', error);
+        setSyncStatus('Erro ao salvar — ' + error.message);
+      } else {
+        setSyncStatus('Salvo às ' + nowHHMM());
+      }
+    } catch(e) {
+      console.error('saveRegistro exceção:', e);
+      setSyncStatus('Erro ao salvar');
+    }
   }
 
   async function deleteRegistro(key) {
