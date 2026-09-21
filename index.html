@@ -839,16 +839,6 @@
         progressEl.className = 'cp-progress-bar'+(workedDisplay>=expected?(workedDisplay-expected>0?' over':' done'):'');
       }
     }
-    const { bancoRegistros, saldoInicial, bancoTotal } = calcBancoTotal();
-    const bancoEl = $('cp-banco-total');
-    bancoEl.textContent = minutesToHHMM(bancoTotal, true);
-    bancoEl.className = 'cp-summary-value mono '+(bancoTotal>=0?'good':'bad');
-    $('cp-banco-note').textContent = config.marcoZeroData
-      ? `a partir de ${formatDate(config.marcoZeroData)}`
-      : saldoInicial !== 0
-        ? `registros ${minutesToHHMM(bancoRegistros,true)} · saldo inicial ${minutesToHHMM(saldoInicial,true)}`
-        : 'acumulado dos dias registrados';
-
     // previsão de saída com almoço real
     const saidaPrevistaEl = $('cp-saida-prevista');
     const saidaNoteEl = $('cp-saida-prevista-note');
