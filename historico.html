@@ -290,13 +290,13 @@
 
   // ── período ───────────────────────────────────────────────────
   function getPeriodo(tipo) {
-    // usa data local (BRT) para evitar problema de timezone UTC
-    const agora = new Date();
-    const hoje = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000);
-    const y = hoje.getUTCFullYear(), m = hoje.getUTCMonth();
+    const hoje = new Date();
+    const y = hoje.getFullYear();
+    const m = hoje.getMonth(); // 0-based
     if (tipo === 'mes') {
-      const ultimo = new Date(y, m+1, 0).getDate();
-      return { from: `${y}-${String(m+1).padStart(2,'0')}-01`, to: `${y}-${String(m+1).padStart(2,'0')}-${String(ultimo).padStart(2,'0')}` };
+      const mm = String(m + 1).padStart(2, '0');
+      const ultimo = String(new Date(y, m + 1, 0).getDate()).padStart(2, '0');
+      return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${ultimo}` };
     }
     return { from: dateFrom, to: dateTo };
   }

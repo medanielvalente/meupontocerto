@@ -568,10 +568,8 @@
       if (error || !data) return; // usa DEFAULT_CONFIG se não encontrar
 
       const saldoRaw = data.saldo_inicial_minutos;
-      // só usa o valor do Supabase se for um número válido e não-nulo
-      const saldoVal = (saldoRaw !== null && saldoRaw !== undefined && !isNaN(Number(saldoRaw)))
-        ? Number(saldoRaw)
-        : 0;
+      // trata explicitamente: null/undefined → 0, qualquer número (incluindo 0) → esse número
+      const saldoVal = (saldoRaw === null || saldoRaw === undefined) ? 0 : parseInt(saldoRaw, 10) || 0;
 
       // dias_trabalho: pode não existir ainda no banco
       let diasVal = [1,2,3,4,5];
@@ -608,16 +606,17 @@
     } else {
       localStorage.removeItem('mpc_marco_zero_' + currentUser.id);
     }
+    const saldoParaSalvar = parseInt(config.saldoInicialMinutos, 10);
     await sb.from('configuracoes').upsert({
       user_id:               currentUser.id,
       entrada:               config.entrada,
       saida_almoco:          config.saidaAlmoco,
       retorno_almoco:        config.retornoAlmoco,
       saida_final:           config.saidaFinal,
-      saida_extra:           config.saidaExtra,
-      retorno_extra:         config.retornoExtra,
+      saida_extra:           config.saidaExtra || null,
+      retorno_extra:         config.retornoExtra || null,
       lembrete_antecedencia: config.lembreteAntecedencia,
-      saldo_inicial_minutos: (config.saldoInicialMinutos === 0 || !isNaN(config.saldoInicialMinutos)) ? Number(config.saldoInicialMinutos) : 0,
+      saldo_inicial_minutos: isNaN(saldoParaSalvar) ? 0 : saldoParaSalvar,
       marco_zero_data:       config.marcoZeroData || null,
       dias_trabalho:         (config.diasTrabalho || [1,2,3,4,5]).join(',')
     }, { onConflict: 'user_id' });
