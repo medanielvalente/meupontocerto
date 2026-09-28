@@ -148,8 +148,8 @@
 
   .cp-body { padding: 22px 18px 0; }
 
-  .cp-gear { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.4); color: var(--white); border-radius: 8px; padding: 8px 10px; font-size: 16px; cursor: pointer; line-height:1; }
-  .cp-gear:hover { background: rgba(255,255,255,0.22); }
+  .cp-gear { background: none; border: none; color: var(--white); padding: 4px 6px; font-size: 22px; cursor: pointer; line-height:1; opacity: 0.9; }
+  .cp-gear:hover { opacity: 1; }
 
   /* punch card */
   .cp-card-wrap { background: var(--surface); border-radius: 10px; padding: 22px 20px 26px; position: relative; box-shadow: 0 10px 26px rgba(45,31,142,0.08); border: 1px solid var(--border); }
@@ -260,7 +260,7 @@
     .cp-clock-time { font-size: 18px; letter-spacing: 0; }
     .cp-clock-date { font-size: 10px; }
     .cp-clock-seconds { display: none; }
-    .cp-gear { padding: 6px 8px; font-size: 14px; }
+    .cp-gear { font-size: 20px; }
 
     /* body */
     .cp-body { padding: 14px 12px 0; }
@@ -306,9 +306,9 @@
   }
 
   /* ── bottom nav ── */
-  .cp-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e8e8ee; display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
-  .cp-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: #52596e; font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; font-family: 'Geist', sans-serif; }
-  .cp-bottom-nav a.active { color: #5B4CF5; }
+  .cp-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #5B4CF5; border-top: none; display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(91,76,245,0.3); }
+  .cp-bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; text-decoration: none; color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 500; letter-spacing: 0.03em; gap: 5px; transition: color .15s; -webkit-tap-highlight-color: transparent; font-family: 'Geist', sans-serif; }
+  .cp-bottom-nav a.active { color: #ffffff; }
   .cp-bottom-nav a svg { width: 22px; height: 22px; stroke-width: 1.8; }
   #cp-root { padding-bottom: 80px; }
 </style>
@@ -388,7 +388,6 @@
           <div class="cp-clock-date" id="cp-clock-date"></div>
         </div>
         <button class="cp-gear" id="cp-open-config" title="Configurações">⚙</button>
-        <button class="cp-gear" id="cp-logout-btn" title="Sair" style="font-size:14px;">↩</button>
       </div>
     </div>
   </div>
@@ -1073,9 +1072,12 @@
           <div id="cp-dias-wrap" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">${botooesDias}</div>
           <div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;">Dom · Seg · Ter · Qua · Qui · Sex · Sáb</div>
         </div>
-        <div class="cp-modal-actions">
-          <button type="button" class="cp-btn-ghost" id="cp-cfg-cancel">Cancelar</button>
-          <button type="button" class="cp-btn-primary" id="cp-cfg-save">Salvar</button>
+        <div class="cp-modal-actions" style="justify-content:space-between;">
+          <button type="button" class="cp-btn-ghost" id="cp-cfg-logout" style="color:var(--bad);border-color:var(--bad);">↩ Sair</button>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="cp-btn-ghost" id="cp-cfg-cancel">Cancelar</button>
+            <button type="button" class="cp-btn-primary" id="cp-cfg-save">Salvar</button>
+          </div>
         </div>
       </div>`;
 
@@ -1091,6 +1093,7 @@
       });
     });
 
+    overlay.querySelector('#cp-cfg-logout').onclick = () => { overlay.remove(); signOut(); };
     overlay.querySelector('#cp-cfg-cancel').onclick = () => overlay.remove();
     overlay.querySelector('#cp-cfg-save').onclick = async () => {
       overlay.querySelectorAll('input[type=time]').forEach(inp => { if (inp.dataset.key) config[inp.dataset.key]=inp.value; });
@@ -1216,7 +1219,6 @@
   function bindEvents() {
     $('cp-stamp-btn').addEventListener('click', punch);
     $('cp-open-config').addEventListener('click', openConfig);
-    $('cp-logout-btn').addEventListener('click', signOut);
   }
 
   // ── init ────────────────────────────────────────────────────
