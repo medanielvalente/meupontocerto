@@ -16,7 +16,7 @@
   <title>Meu Ponto Certo</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body style="margin:0;padding:0;background:#5B4CF5;font-family:'Geist',sans-serif;">
+<body style="margin:0;padding:0;background:var(--bg);font-family:'Geist',sans-serif;">
 
 <!-- ── TELA DE LOGIN ─────────────────────────────────────── -->
 <div id="login-screen" style="display:none;">
@@ -135,7 +135,7 @@
   #cp-root h1, #cp-root h2, #cp-root h3 { font-family: 'Geist', sans-serif; margin: 0; }
   #cp-root .mono { font-family: 'Geist Mono', monospace; }
 
-  .cp-topbar { background: var(--brand); padding: 20px 18px; border-radius: 14px 14px 0 0; display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .cp-topbar { background: var(--brand); padding: 20px 18px; border-radius: 0; display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
   .cp-brandmark { display:flex; align-items:center; gap: 12px; }
   .cp-brandmark svg { display:block; width: 104px; height: auto; box-shadow: 0 2px 6px rgba(0,20,80,0.25); }
   .cp-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-bottom: 4px; }
@@ -385,7 +385,6 @@
       <div style="display:flex;align-items:flex-start;gap:10px;justify-content:flex-end;">
         <div>
           <div class="cp-clock-time mono" id="cp-clock-time">--:--:--</div>
-          <div class="cp-clock-date" id="cp-clock-date"></div>
         </div>
         <button class="cp-gear" id="cp-open-config" title="Configurações">⚙</button>
       </div>
@@ -404,7 +403,7 @@
   </div>
 
   <div class="cp-card-wrap">
-    <div class="cp-card-title">Hoje</div>
+    <div class="cp-card-title" id="cp-card-date-title">Hoje</div>
     <div class="cp-slots" id="cp-slots"></div>
     <div class="cp-stamp-btn-wrap">
       <button class="cp-stamp-btn" id="cp-stamp-btn">Bater ponto</button>
@@ -564,13 +563,11 @@
   async function loadConfig() {
     try {
       const { data, error } = await sb.from('configuracoes').select('*').eq('user_id', currentUser.id).single();
-      if (error || !data) return; // usa DEFAULT_CONFIG se não encontrar
+      if (error || !data) return;
 
       const saldoRaw = data.saldo_inicial_minutos;
-      // trata explicitamente: null/undefined → 0, qualquer número (incluindo 0) → esse número
       const saldoVal = (saldoRaw === null || saldoRaw === undefined) ? 0 : parseInt(saldoRaw, 10) || 0;
 
-      // dias_trabalho: pode não existir ainda no banco
       let diasVal = [1,2,3,4,5];
       try {
         if (data.dias_trabalho) diasVal = data.dias_trabalho.split(',').map(Number).filter(n => !isNaN(n));
@@ -594,7 +591,6 @@
       };
     } catch(e) {
       console.error('loadConfig erro:', e);
-      // mantém DEFAULT_CONFIG em caso de falha
     }
   }
 
@@ -732,15 +728,12 @@
     if (!day) return false;
     return (day.saidaAlmoco && !day.retornoAlmoco) || (day.saidaExtra && !day.retornoExtra);
   }
-  // slots obrigatórios — definem a sequência principal de lembrete
   const MAIN_SLOTS = ['entrada','saidaAlmoco','retornoAlmoco','saidaFinal'];
 
   function nextSlotKey(day) {
-    // primeiro tenta a sequência principal
     for (const key of MAIN_SLOTS) {
       if (!day || !day[key]) return key;
     }
-    // só vai pros extras se o dia principal estiver completo
     for (const s of SLOT_DEFS) {
       if (s.row === 2 && (!day || !day[s.key])) return s.key;
     }
@@ -750,7 +743,6 @@
     const expected = expectedWorkedMinutes();
     let bancoRegistros = 0;
     Object.entries(registros).forEach(([data, d]) => {
-      // ignora dias anteriores ao marco zero
       if (config.marcoZeroData && data < config.marcoZeroData) return;
       const w = workedMinutesForDay(d);
       if (w !== null) bancoRegistros += (w - expected);
@@ -782,7 +774,13 @@
     const m = String(d.getMinutes()).padStart(2,'0');
     const s = String(d.getSeconds()).padStart(2,'0');
     $('cp-clock-time').innerHTML = `${h}:${m}<span class="cp-clock-seconds">:${s}</span>`;
-    $('cp-clock-date').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'short' });
+    
+    // Data completa atualizada dinamicamente para o título do card principal
+    const dataFormatada = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'short' });
+    const elCardTitle = $('cp-card-date-title');
+    if (elCardTitle) {
+      elCardTitle.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+    }
   }
 
   function renderSlots() {
@@ -795,7 +793,6 @@
     const divider = document.createElement('div'); divider.className = 'cp-slots-divider';
     const row2 = document.createElement('div'); row2.className = 'cp-slots-row cp-slots-row-extra';
 
-    // abre automaticamente se já tem dados extras no dia
     const temExtra = !!(day.saidaExtra || day.retornoExtra);
     if (temExtra) row2.classList.add('visible');
 
@@ -848,7 +845,6 @@
         progressEl.className = 'cp-progress-bar'+(workedDisplay>=expected?(workedDisplay-expected>0?' over':' done'):'');
       }
     }
-    // previsão de saída com almoço real
     const saidaPrevistaEl = $('cp-saida-prevista');
     const saidaNoteEl = $('cp-saida-prevista-note');
     if (day && day.entrada) {
@@ -860,7 +856,6 @@
       saidaPrevistaEl.style.color = day.saidaFinal
         ? 'var(--ink-soft)'
         : 'var(--brand-deep)';
-      // mostra aviso se almoço real foi diferente do padrão
       const almocoReal = (day.saidaAlmoco && day.retornoAlmoco)
         ? toMinutes(day.retornoAlmoco) - toMinutes(day.saidaAlmoco)
         : null;
@@ -881,12 +876,10 @@
   }
 
   function formatDate(key) {
-    // converte YYYY-MM-DD → DD-MM-AA
     const [y, m, d] = key.split('-');
     return `${d}-${m}-${y.slice(2)}`;
   }
 
-  // ── ações ───────────────────────────────────────────────────
   async function punch() {
     const key = todayKey();
     const day = registros[key] || {};
@@ -910,7 +903,6 @@
     setTimeout(() => mark.remove(), 750);
   }
 
-  // ── modais ──────────────────────────────────────────────────
   function mountOverlay(overlay) {
     document.querySelectorAll('.cp-modal-overlay').forEach(o => o.remove());
     const box = overlay.querySelector('.cp-modal');
@@ -949,87 +941,10 @@
     };
   }
 
-  function openDayEditor(key) {
-    const day = registros[key] || {};
-    const overlay = document.createElement('div');
-    overlay.className = 'cp-modal-overlay';
-    overlay.innerHTML = `
-      <div class="cp-modal">
-        <h3>Editar dia · ${key}</h3>
-        ${SLOT_DEFS.map(s=>`<div class="cp-field"><label>${s.label}</label>
-          <input type="time" data-key="${s.key}" value="${day[s.key]||''}"></div>`).join('')}
-        <div class="cp-modal-actions">
-          <button type="button" class="cp-btn-ghost" id="cp-day-cancel">Cancelar</button>
-          <button type="button" class="cp-btn-primary" id="cp-day-save">Salvar</button>
-        </div>
-      </div>`;
-    mountOverlay(overlay);
-    overlay.querySelector('#cp-day-cancel').onclick = () => overlay.remove();
-    overlay.querySelector('#cp-day-save').onclick = async () => {
-      const newDay = { manual: day.manual||{} };
-      overlay.querySelectorAll('input[type=time]').forEach(inp => {
-        if (inp.value) { newDay[inp.dataset.key]=inp.value; newDay.manual[inp.dataset.key]=true; }
-      });
-      registros[key] = newDay;
-      overlay.remove(); render();
-      await saveRegistro(key);
-    };
-  }
-
-  function confirmZerarBanco() {
-    const overlay = document.createElement('div');
-    overlay.className = 'cp-modal-overlay';
-    const hoje = todayKey();
-    overlay.innerHTML = `
-      <div class="cp-modal">
-        <h3>Zerar banco de horas</h3>
-        <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6;">
-          O histórico anterior será mantido, mas o banco de horas passará a ser calculado
-          a partir de <strong>hoje (${formatDate(hoje)})</strong>.<br><br>
-          Use quando tirar folga compensatória ou quando as horas forem pagas.
-        </p>
-        <div class="cp-modal-actions">
-          <button type="button" class="cp-btn-ghost" id="cp-zerar-cancel">Cancelar</button>
-          <button type="button" class="cp-btn-danger" id="cp-zerar-confirm">Zerar agora</button>
-        </div>
-      </div>`;
-    mountOverlay(overlay);
-    overlay.querySelector('#cp-zerar-cancel').onclick = () => overlay.remove();
-    overlay.querySelector('#cp-zerar-confirm').onclick = async () => {
-      config.marcoZeroData = hoje;
-      config.saldoInicialMinutos = 0;
-      await saveConfig();
-      overlay.remove();
-      render();
-    };
-  }
-
-  function confirmDeleteDay(key) {
-    const overlay = document.createElement('div');
-    overlay.className = 'cp-modal-overlay';
-    overlay.innerHTML = `
-      <div class="cp-modal">
-        <h3>Excluir registro</h3>
-        <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;">Tem certeza que deseja excluir o registro de <strong>${key}</strong>?</p>
-        <div class="cp-modal-actions">
-          <button type="button" class="cp-btn-ghost" id="cp-del-cancel">Cancelar</button>
-          <button type="button" class="cp-btn-danger" id="cp-del-confirm">Excluir</button>
-        </div>
-      </div>`;
-    mountOverlay(overlay);
-    overlay.querySelector('#cp-del-cancel').onclick = () => overlay.remove();
-    overlay.querySelector('#cp-del-confirm').onclick = async () => {
-      overlay.remove();
-      await deleteRegistro(key);
-      render();
-    };
-  }
-
   function openConfig() {
     const overlay = document.createElement('div');
     overlay.className = 'cp-modal-overlay';
 
-    // gera botões dos dias separadamente para evitar template literal aninhado
     const DIAS = [['D',0],['S',1],['T',2],['Q',3],['Q',4],['S',5],['S',6]];
     const diasAtivos = config.diasTrabalho || [1,2,3,4,5];
     const botooesDias = DIAS.map(([label, val]) => {
@@ -1083,7 +998,6 @@
 
     mountOverlay(overlay);
 
-    // toggle dos botões de dia
     overlay.querySelectorAll('.cp-dia-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const ativo = btn.classList.toggle('active');
@@ -1109,13 +1023,6 @@
     };
   }
 
-  // ── lembretes ───────────────────────────────────────────────
-  // ── som de alerta ────────────────────────────────────────────
-  // ── sons de alerta ──────────────────────────────────────────
-  // soon   → lembrete antecipado (tom suave único)
-  // almoco → retorno do almoço (dois tons ascendentes)
-  // saida  → saída final (três tons celebratórios)
-  // late   → outros pontos atrasados (dois beeps rápidos)
   function playAlertSound(tipo) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1151,22 +1058,13 @@
   function calcSaidaPrevista(day) {
     if (!day || !day.entrada) return null;
     const entradaMin = toMinutes(day.entrada);
-    // almoço real se já voltou, senão usa o padrão do config
     const almocoReal = (day.saidaAlmoco && day.retornoAlmoco)
       ? toMinutes(day.retornoAlmoco) - toMinutes(day.saidaAlmoco)
       : toMinutes(config.retornoAlmoco) - toMinutes(config.saidaAlmoco);
-    // ausência extra real se já voltou
     const extraReal = (day.saidaExtra && day.retornoExtra)
       ? toMinutes(day.retornoExtra) - toMinutes(day.saidaExtra)
       : 0;
     return entradaMin + expectedWorkedMinutes() + almocoReal + extraReal;
-  }
-
-  function getTargetTime(next, day) {
-    if (next === 'saidaFinal' && day && day.entrada) {
-      return calcSaidaPrevista(day);
-    }
-    return toMinutes(config[next]);
   }
 
   function checkReminders() {
@@ -1174,20 +1072,16 @@
     const day = registros[key]||{};
     const now = new Date();
     const nowMin = now.getHours()*60+now.getMinutes();
-    const LEAD = 10; // minutos de antecedência
+    const LEAD = 10;
 
-    // ── Retorno do almoço ─────────────────────────────────────
-    // só avisa se já saiu pro almoço e ainda não voltou
     if (day.saidaAlmoco && !day.retornoAlmoco) {
       const targetMin = toMinutes(config.retornoAlmoco);
       if (targetMin) {
         const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
         const diff = targetMin - nowMin;
-        // hora exata ou passou (janela de até 2 min pra não perder)
         if (diff <= 0 && diff >= -2 && !lastNotified[key+'retornoAlmoco_late']) {
           notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
           lastNotified[key+'retornoAlmoco_late'] = true;
-        // lembrete antecipado (janela entre 10 e 11 min antes)
         } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'retornoAlmoco_soon']) {
           notify('🔔 Meu Ponto Certo', `Retorno do almoço em ~${diff} min (${targetStr})`, 'soon');
           lastNotified[key+'retornoAlmoco_soon'] = true;
@@ -1195,18 +1089,14 @@
       }
     }
 
-    // ── Saída final ───────────────────────────────────────────
-    // só avisa se já voltou do almoço e ainda não bateu a saída
     if (day.retornoAlmoco && !day.saidaFinal) {
       const targetMin = calcSaidaPrevista(day);
       if (targetMin) {
         const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
         const diff = targetMin - nowMin;
-        // hora exata ou passou (janela de até 2 min)
         if (diff <= 0 && diff >= -2 && !lastNotified[key+'saidaFinal_late']) {
           notify('🎉 Hora de ir embora!', `Saída prevista: ${targetStr} — bata o ponto!`, 'saida');
           lastNotified[key+'saidaFinal_late'] = true;
-        // lembrete antecipado (janela entre 10 e 11 min antes)
         } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'saidaFinal_soon']) {
           notify('🔔 Meu Ponto Certo', `Saída em ~${diff} min (${targetStr})`, 'soon');
           lastNotified[key+'saidaFinal_soon'] = true;
@@ -1215,25 +1105,23 @@
     }
   }
 
-  // ── bind ────────────────────────────────────────────────────
   function bindEvents() {
-    $('cp-stamp-btn').addEventListener('click', punch);
-    $('cp-open-config').addEventListener('click', openConfig);
+    $('cp-stamp-btn').addEventListener('click', punch);$('cp-open-config').addEventListener('click', openConfig);
   }
 
-  // ── init ────────────────────────────────────────────────────
   function renderSaudacao(user) {
-    // exibe a data no lugar da saudação
     const el = $('cp-saudacao');
     if (!el) return;
-    const d = new Date();
-    el.textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+    const hora = new Date().getHours();
+    const periodo = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+    const nomeCompleto = user.user_metadata?.full_name || user.email || '';
+    const primeiroNome = nomeCompleto.split(' ')[0];
+    el.textContent = `${periodo}, ${primeiroNome}! 👋`;
   }
 
   function showLoading() {
     $('cp-loading').style.display = 'flex';
-    $('login-screen').style.display = 'none';
-    $('cp-root').style.display = 'none';
+    $('login-screen').style.display = 'none';$('cp-root').style.display = 'none';
   }
   function hideLoading() {
     $('cp-loading').style.display = 'none';
@@ -1242,21 +1130,14 @@
   async function verificarDadosDoDia() {
     const key = todayKey();
     const dadosLocais = registros[key];
-
-    // se já tem dados locais com entrada preenchida, está ok
     if (dadosLocais && dadosLocais.entrada) return;
-
-    // busca diretamente do Supabase só o registro de hoje
     try {
       const { data, error } = await sb.from('registros')
         .select('*')
         .eq('user_id', currentUser.id)
         .eq('data', key)
         .single();
-
-      if (error || !data) return; // sem registro hoje, tudo certo
-
-      // tem dados no Supabase que não estavam no cache local — atualiza
+      if (error || !data) return;
       registros[key] = {
         entrada:       data.entrada        || '',
         saidaAlmoco:   data.saida_almoco   || '',
@@ -1270,13 +1151,14 @@
       console.error('Erro ao verificar dados do dia:', e);
     }
   }
+
   async function startApp(user) {
     try {
       currentUser = user;
       showLoading();
       renderSaudacao(user);
       await loadConfig();
-      checkDiaDescanso(); // mostra banner de descanso logo após carregar config
+      checkDiaDescanso();
       await loadRegistros();
       await verificarDadosDoDia();
       hideLoading();
@@ -1289,7 +1171,6 @@
 
       let lastRefresh = 0;
       const REFRESH_INTERVAL = 30 * 1000;
-
       async function refreshIfNeeded(force) {
         const agora = Date.now();
         if (force || agora - lastRefresh > REFRESH_INTERVAL) {
@@ -1304,13 +1185,11 @@
       document.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'visible') await refreshIfNeeded();
       });
-
       window.addEventListener('pageshow', async (e) => {
         if (e.persisted || document.visibilityState === 'visible') {
           await refreshIfNeeded(true);
         }
       });
-
       window.addEventListener('focus', async () => {
         await refreshIfNeeded();
       });
@@ -1323,39 +1202,32 @@
       }
     } catch(e) {
       console.error('startApp erro:', e);
-      // mesmo com erro, tenta mostrar o app
       hideLoading();
       showApp();
-      try { render(); } catch(e2) { console.error('render erro:', e2); }
+      try { render(); } catch(e2) {}
     }
   }
 
   async function init() {
-    // botão de login
     $('login-google-btn').addEventListener('click', signInWithGoogle);
 
-    // 1. tenta recuperar sessão do token na URL (após redirect do Google)
     if (location.hash || location.search.includes('code=')) {
       const { data, error } = await sb.auth.exchangeCodeForSession(location.href).catch(() => ({ data: null }));
       if (data?.session?.user) {
-        // limpa a URL sem recarregar
         history.replaceState(null, '', location.pathname);
         await startApp(data.session.user);
         return;
       }
     }
 
-    // 2. tenta sessão salva no localStorage
     const { data: { session } } = await sb.auth.getSession();
     if (session?.user) {
       await startApp(session.user);
       return;
     }
 
-    // 3. sem sessão — mostra login
     showLogin();
 
-    // 4. escuta mudanças futuras (ex: após redirect OAuth)
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user && !currentUser) {
         history.replaceState(null, '', location.pathname);
