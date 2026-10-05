@@ -1119,5 +1119,104 @@
     });
   }
 </script>
+
+<script>
+  // ── Sistema de Alertas e Som Robusto para o Meu Ponto Certo ──
+  let audioCtx = null;
+
+  function initAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playAlertSound(tipo) {
+    try {
+      initAudioContext();
+      if (!audioCtx) return;
+
+      let seq = [];
+      if (tipo === 'soon') {
+        seq = [{ freq: 528, dur: 0.3, vol: 0.25, t: 0 }];
+      } else if (tipo === 'almoco') {
+        seq = [{ freq: 660, dur: 0.25, vol: 0.35, t: 0 }, { freq: 880, dur: 0.35, vol: 0.4, t: 0.32 }];
+      } else if (tipo === 'saida') {
+        seq = [{ freq: 660, dur: 0.2, vol: 0.35, t: 0 }, { freq: 784, dur: 0.2, vol: 0.38, t: 0.27 }, { freq: 1047, dur: 0.45, vol: 0.42, t: 0.54 }];
+      } else {
+        seq = [{ freq: 880, dur: 0.2, vol: 0.35, t: 0 }, { freq: 880, dur: 0.2, vol: 0.35, t: 0.28 }];
+      }
+
+      seq.forEach(({ freq, dur, vol, t }) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        const st = audioCtx.currentTime + t;
+        osc.frequency.setValueAtTime(freq, st);
+        gain.gain.setValueAtTime(vol, st);
+        gain.gain.exponentialRampToValueAtTime(0.001, st + dur);
+        osc.start(st);
+        osc.stop(st + dur);
+      });
+    } catch (e) {
+      console.error('Erro ao tocar som:', e);
+    }
+  }
+
+  function notify(title, body, soundTipo) {
+    playAlertSound(soundTipo);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  }
+
+  function checkReminders() {
+    const key = todayKey();
+    const day = registros[key] || {};
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const LEAD = config.lembreteAntecedencia || 10;
+
+    // Retorno do almoço
+    if (day.saidaAlmoco && !day.retornoAlmoco) {
+      const targetMin = toMinutes(config.retornoAlmoco);
+      if (targetMin) {
+        const targetStr = String(Math.floor(targetMin / 60)).padStart(2, '0') + ':' + String(targetMin % 60).padStart(2, '0');
+        const diff = targetMin - nowMin;
+
+        if (diff <= 0 && diff >= -3 && !lastNotified[key + 'retornoAlmoco_late']) {
+          notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
+          lastNotified[key + 'retornoAlmoco_late'] = true;
+        } else if (diff <= LEAD && diff > LEAD - 3 && !lastNotified[key + 'retornoAlmoco_soon']) {
+          notify('🔔 Meu Ponto Certo', `Retorno do almoço em ~${diff} min (${targetStr})`, 'soon');
+          lastNotified[key + 'retornoAlmoco_soon'] = true;
+        }
+      }
+    }
+
+    // Saída final
+    if (day.retornoAlmoco && !day.saidaFinal) {
+      const targetMin = calcSaidaPrevista(day);
+      if (targetMin) {
+        const targetStr = String(Math.floor(targetMin / 60)).padStart(2, '0') + ':' + String(targetMin % 60).padStart(2, '0');
+        const diff = targetMin - nowMin;
+
+        if (diff <= 0 && diff >= -3 && !lastNotified[key + 'saidaFinal_late']) {
+          notify('🎉 Hora de ir embora!', `Saída prevista: ${targetStr} — bata o ponto!`, 'saida');
+          lastNotified[key + 'saidaFinal_late'] = true;
+        } else if (diff <= LEAD && diff > LEAD - 3 && !lastNotified[key + 'saidaFinal_soon']) {
+          notify('🔔 Meu Ponto Certo', `Saída em ~${diff} min (${targetStr})`, 'soon');
+          lastNotified[key + 'saidaFinal_soon'] = true;
+        }
+      }
+    }
+  }
+</script>
+
 </body>
 </html>
