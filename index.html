@@ -691,7 +691,6 @@
     const s = String(d.getSeconds()).padStart(2,'0');
     $('cp-clock-time').innerHTML = `${h}:${m}<span class="cp-clock-seconds">:${s}</span>`;
 
-    // Mês por extenso completo sem abreviação (ex: "quinta-feira, 01 de outubro")
     const dataFormatada = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
     const elCardTitle = $('cp-card-date-title');
     if (elCardTitle) {
@@ -792,6 +791,7 @@
   }
 
   async function punch() {
+    initAudioContext(); // Destrava o áudio no toque do botão
     const key = todayKey();
     const day = registros[key] || {};
     const next = nextSlotKey(day);
@@ -842,6 +842,7 @@
     mountOverlay(overlay);
     overlay.querySelector('#cp-manual-cancel').onclick = () => overlay.remove();
     overlay.querySelector('#cp-manual-save').onclick = async () => {
+      initAudioContext();
       const val = overlay.querySelector('#cp-manual-time').value;
       if (!val) return;
       day[slotKey] = val;
@@ -921,6 +922,7 @@
     overlay.querySelector('#cp-cfg-logout').onclick = () => { overlay.remove(); signOut(); };
     overlay.querySelector('#cp-cfg-cancel').onclick = () => overlay.remove();
     overlay.querySelector('#cp-cfg-save').onclick = async () => {
+      initAudioContext();
       overlay.querySelectorAll('input[type=time]').forEach(inp => { if (inp.dataset.key) config[inp.dataset.key]=inp.value; });
       const saldoRaw   = overlay.querySelector('#cp-cfg-saldo-hhmm').value||'00:00';
       const saldoSinal = Number(overlay.querySelector('#cp-cfg-saldo-sinal').value)||1;
@@ -932,6 +934,62 @@
       overlay.remove();
       render();
     };
+  }
+
+  // ── Sistema de Alertas e Som Robusto ─────────────────────────
+  let audioCtx = null;
+
+  function initAudioContext() {
+    try {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    } catch(e) {}
+  }
+
+  function playAlertSound(tipo) {
+    try {
+      initAudioContext();
+      if (!audioCtx) return;
+
+      let seq = [];
+      if (tipo === 'soon') {
+        seq = [{ freq: 528, dur: 0.3, vol: 0.25, t: 0 }];
+      } else if (tipo === 'almoco') {
+        seq = [{ freq: 660, dur: 0.25, vol: 0.35, t: 0 }, { freq: 880, dur: 0.35, vol: 0.4, t: 0.32 }];
+      } else if (tipo === 'saida') {
+        seq = [{ freq: 660, dur: 0.2, vol: 0.35, t: 0 }, { freq: 784, dur: 0.2, vol: 0.38, t: 0.27 }, { freq: 1047, dur: 0.45, vol: 0.42, t: 0.54 }];
+      } else {
+        seq = [{ freq: 880, dur: 0.2, vol: 0.35, t: 0 }, { freq: 880, dur: 0.2, vol: 0.35, t: 0.28 }];
+      }
+
+      seq.forEach(({ freq, dur, vol, t }) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        const st = audioCtx.currentTime + t;
+        osc.frequency.setValueAtTime(freq, st);
+        gain.gain.setValueAtTime(vol, st);
+        gain.gain.exponentialRampToValueAtTime(0.001, st + dur);
+        osc.start(st);
+        osc.stop(st + dur);
+      });
+    } catch (e) {
+      console.error('Erro ao tocar som:', e);
+    }
+  }
+
+  function notify(title, body, soundTipo) {
+    playAlertSound(soundTipo);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
   }
 
   function calcSaidaPrevista(day) {
@@ -947,36 +1005,51 @@
   }
 
   function checkReminders() {
-    const key = todayKey();
-    const day = registros[key]||{};
-    const now = new Date();
-    const nowMin = now.getHours()*60+now.getMinutes();
-    const LEAD = 10;
+    try {
+      const key = todayKey();
+      const day = registros[key] || {};
+      const now = new Date();
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      const LEAD = Number(config.lembreteAntecedencia) || 10;
 
-    if (day.saidaAlmoco && !day.retornoAlmoco) {
-      const targetMin = toMinutes(config.retornoAlmoco);
-      if (targetMin) {
-        const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-        const diff = targetMin - nowMin;
-        if (diff <= 0 && diff >= -2 && !lastNotified[key+'retornoAlmoco_late']) {
-          lastNotified[key+'retornoAlmoco_late'] = true;
-        } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'retornoAlmoco_soon']) {
-          lastNotified[key+'retornoAlmoco_soon'] = true;
+      // Diagnóstico no console (F12)
+      console.log(`[Meu Ponto Certo] Checando alertas... Hora atual: ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} (${nowMin} min)`);
+
+      // ── Retorno do almoço ─────────────────────────────────────
+      if (day.saidaAlmoco && !day.retornoAlmoco) {
+        const targetMin = toMinutes(config.retornoAlmoco);
+        if (targetMin) {
+          const diff = targetMin - nowMin;
+          console.log(`-> Almoço: Alvo=${targetMin}, Dif=${diff} min`);
+
+          if (diff <= 0 && diff >= -5 && !lastNotified[key + 'retornoAlmoco_late']) {
+            notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
+            lastNotified[key + 'retornoAlmoco_late'] = true;
+          } else if (diff <= LEAD && diff >= 0 && !lastNotified[key + 'retornoAlmoco_soon']) {
+            notify('🔔 Meu Ponto Certo', `Retorno do almoço em ~${diff} min`, 'soon');
+            lastNotified[key + 'retornoAlmoco_soon'] = true;
+          }
         }
       }
-    }
 
-    if (day.retornoAlmoco && !day.saidaFinal) {
-      const targetMin = calcSaidaPrevista(day);
-      if (targetMin) {
-        const targetStr = String(Math.floor(targetMin/60)).padStart(2,'0')+':'+String(targetMin%60).padStart(2,'0');
-        const diff = targetMin - nowMin;
-        if (diff <= 0 && diff >= -2 && !lastNotified[key+'saidaFinal_late']) {
-          lastNotified[key+'saidaFinal_late'] = true;
-        } else if (diff <= LEAD && diff > LEAD - 2 && !lastNotified[key+'saidaFinal_soon']) {
-          lastNotified[key+'saidaFinal_soon'] = true;
+      // ── Saída final ───────────────────────────────────────────
+      if (day.retornoAlmoco && !day.saidaFinal) {
+        const targetMin = calcSaidaPrevista(day);
+        if (targetMin) {
+          const diff = targetMin - nowMin;
+          console.log(`-> Saída: Alvo=${targetMin}, Dif=${diff} min`);
+
+          if (diff <= 0 && diff >= -5 && !lastNotified[key + 'saidaFinal_late']) {
+            notify('🎉 Hora de ir embora!', `Saída prevista — bata o ponto!`, 'saida');
+            lastNotified[key + 'saidaFinal_late'] = true;
+          } else if (diff <= LEAD && diff >= 0 && !lastNotified[key + 'saidaFinal_soon']) {
+            notify('🔔 Meu Ponto Certo', `Saída em ~${diff} min`, 'soon');
+            lastNotified[key + 'saidaFinal_soon'] = true;
+          }
         }
       }
+    } catch (e) {
+      console.error('Erro no checkReminders:', e);
     }
   }
 
@@ -1066,6 +1139,13 @@
       window.addEventListener('focus', async () => {
         await refreshIfNeeded();
       });
+
+      if ('Notification' in window) {
+        if (Notification.permission==='granted') { notifOn=true; }
+        else if (Notification.permission!=='denied') {
+          Notification.requestPermission().then(p => { notifOn = p==='granted'; });
+        }
+      }
     } catch(e) {
       hideLoading();
       showApp();
@@ -1119,104 +1199,5 @@
     });
   }
 </script>
-
-<script>
-  // ── Sistema de Alertas e Som Robusto para o Meu Ponto Certo ──
-  let audioCtx = null;
-
-  function initAudioContext() {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) audioCtx = new AudioContextClass();
-    }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-  }
-
-  function playAlertSound(tipo) {
-    try {
-      initAudioContext();
-      if (!audioCtx) return;
-
-      let seq = [];
-      if (tipo === 'soon') {
-        seq = [{ freq: 528, dur: 0.3, vol: 0.25, t: 0 }];
-      } else if (tipo === 'almoco') {
-        seq = [{ freq: 660, dur: 0.25, vol: 0.35, t: 0 }, { freq: 880, dur: 0.35, vol: 0.4, t: 0.32 }];
-      } else if (tipo === 'saida') {
-        seq = [{ freq: 660, dur: 0.2, vol: 0.35, t: 0 }, { freq: 784, dur: 0.2, vol: 0.38, t: 0.27 }, { freq: 1047, dur: 0.45, vol: 0.42, t: 0.54 }];
-      } else {
-        seq = [{ freq: 880, dur: 0.2, vol: 0.35, t: 0 }, { freq: 880, dur: 0.2, vol: 0.35, t: 0.28 }];
-      }
-
-      seq.forEach(({ freq, dur, vol, t }) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'sine';
-        const st = audioCtx.currentTime + t;
-        osc.frequency.setValueAtTime(freq, st);
-        gain.gain.setValueAtTime(vol, st);
-        gain.gain.exponentialRampToValueAtTime(0.001, st + dur);
-        osc.start(st);
-        osc.stop(st + dur);
-      });
-    } catch (e) {
-      console.error('Erro ao tocar som:', e);
-    }
-  }
-
-  function notify(title, body, soundTipo) {
-    playAlertSound(soundTipo);
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
-    }
-  }
-
-  function checkReminders() {
-    const key = todayKey();
-    const day = registros[key] || {};
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const LEAD = config.lembreteAntecedencia || 10;
-
-    // Retorno do almoço
-    if (day.saidaAlmoco && !day.retornoAlmoco) {
-      const targetMin = toMinutes(config.retornoAlmoco);
-      if (targetMin) {
-        const targetStr = String(Math.floor(targetMin / 60)).padStart(2, '0') + ':' + String(targetMin % 60).padStart(2, '0');
-        const diff = targetMin - nowMin;
-
-        if (diff <= 0 && diff >= -3 && !lastNotified[key + 'retornoAlmoco_late']) {
-          notify('🍽️ Retorno do almoço', `Hora de voltar! Bata o ponto de retorno.`, 'almoco');
-          lastNotified[key + 'retornoAlmoco_late'] = true;
-        } else if (diff <= LEAD && diff > LEAD - 3 && !lastNotified[key + 'retornoAlmoco_soon']) {
-          notify('🔔 Meu Ponto Certo', `Retorno do almoço em ~${diff} min (${targetStr})`, 'soon');
-          lastNotified[key + 'retornoAlmoco_soon'] = true;
-        }
-      }
-    }
-
-    // Saída final
-    if (day.retornoAlmoco && !day.saidaFinal) {
-      const targetMin = calcSaidaPrevista(day);
-      if (targetMin) {
-        const targetStr = String(Math.floor(targetMin / 60)).padStart(2, '0') + ':' + String(targetMin % 60).padStart(2, '0');
-        const diff = targetMin - nowMin;
-
-        if (diff <= 0 && diff >= -3 && !lastNotified[key + 'saidaFinal_late']) {
-          notify('🎉 Hora de ir embora!', `Saída prevista: ${targetStr} — bata o ponto!`, 'saida');
-          lastNotified[key + 'saidaFinal_late'] = true;
-        } else if (diff <= LEAD && diff > LEAD - 3 && !lastNotified[key + 'saidaFinal_soon']) {
-          notify('🔔 Meu Ponto Certo', `Saída em ~${diff} min (${targetStr})`, 'soon');
-          lastNotified[key + 'saidaFinal_soon'] = true;
-        }
-      }
-    }
-  }
-</script>
-
 </body>
 </html>
